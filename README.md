@@ -1,4 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EcoEats
+
+EcoEats is a hyperlocal surplus-food marketplace. The application uses Supabase
+for authentication and PostgreSQL, with inventory reserved during checkout and
+confirmed only by a verified Razorpay webhook.
+
+## Razorpay payment flow
+
+1. The client checks out its cart through `checkout_cart()` and receives a
+   `PENDING_PAYMENT` order with an `ACTIVE` 10-minute reservation.
+2. The client calls `POST /api/orders/:orderId/razorpay-order` with its Supabase
+   bearer token. The route reads the order amount from PostgreSQL, creates a
+   Razorpay Order server-side, and returns only the public Razorpay key and
+   checkout configuration.
+3. Razorpay sends `payment.captured` or `payment.failed` to
+   `POST /api/razorpay/webhook`. The route verifies the raw-body HMAC before it
+   changes any data.
+4. Private database functions atomically convert a successful reservation or
+   release inventory for a failed payment. Browser callbacks never confirm an
+   order.
+
+Configure a test Razorpay webhook for:
+
+```text
+https://your-domain.example/api/razorpay/webhook
+```
+
+Subscribe to `payment.captured` and `payment.failed`. Set the same webhook secret
+in Razorpay and `RAZORPAY_WEBHOOK_SECRET`.
+
+Copy `.env.example` to `.env.local` and provide Razorpay test credentials before
+calling the payment-order endpoint.
+
+## Getting started
 
 ## Getting Started
 

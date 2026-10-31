@@ -1,0 +1,5 @@
+import { redirect } from "next/navigation";
+import { Brand } from "@/components/brand";
+import { getCurrentUser } from "@/lib/auth/session";
+import { LoginForm } from "./login-form";
+export default async function LoginPage() { if (await getCurrentUser()) redirect("/app"); return <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10"><section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"><Brand /><div className="mt-8"><p className="text-sm font-medium text-emerald-700">Welcome back</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Sign in to EcoEats</h1><p className="mt-2 text-sm leading-6 text-slate-600">Discover nearby surplus food, or manage your restaurant&apos;s listings.</p></div><div className="mt-8"><LoginForm /></div><p className="mt-6 text-center text-xs leading-5 text-slate-500">New customer registration will be available once account provisioning is enabled.</p></section></main>; }

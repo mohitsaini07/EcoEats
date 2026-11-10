@@ -12,7 +12,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full bg-slate-50 font-sans text-slate-950">{children}</body>
+      <body className="min-h-full font-sans">
+        <a className="eco-skip-link" href="#main-content">Skip to content</a>
+        {children}
+      </body>
     </html>
   );
 }

@@ -223,56 +223,6 @@ export function MarketplaceView() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 pb-16 pt-5 sm:px-6 lg:px-10 lg:pt-7">
-        {/* Shared brand navigation */}
-        <header className="sticky top-4 z-40 mx-auto flex w-full max-w-7xl items-center justify-between gap-3 rounded-full border border-white/10 bg-[#14251B] px-4 py-3 text-white shadow-[0_14px_40px_rgba(20,37,27,0.18)] backdrop-blur-xl sm:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="EcoEats home">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#2D804D] text-white shadow-inner">
-              <IconLeaf size={19} />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight">
-              Eco<span className="text-[#83C99A]">Eats</span>
-            </span>
-          </Link>
-
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
-            <a
-              href="#marketplace"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#173D2A] shadow-sm"
-              aria-current="page"
-            >
-              Discover
-            </a>
-            <Link
-              href="/#how-it-works"
-              className="rounded-full px-4 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
-            >
-              How it works
-            </Link>
-            <Link
-              href="/#restaurants"
-              className="rounded-full px-4 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
-            >
-              For restaurants
-            </Link>
-          </nav>
-
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#2D804D] px-3.5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#256B40] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8D8B5] focus-visible:ring-offset-2 focus-visible:ring-offset-[#14251B]"
-            aria-label={`Open cart with ${totalCartCount} items`}
-          >
-            <span className="relative">
-              <IconShoppingBag size={18} />
-              {totalCartCount > 0 && (
-                <span className="absolute -right-2 -top-2 grid min-w-4 place-items-center rounded-full bg-[#F3C66B] px-1 text-[9px] font-black leading-4 text-[#233326]">
-                  {totalCartCount}
-                </span>
-              )}
-            </span>
-            <span className="hidden sm:inline">Your cart</span>
-          </button>
-        </header>
 
         {/* Marketplace introduction */}
         <section

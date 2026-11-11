@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   IconChefHat,
   IconPlus,
@@ -49,7 +49,8 @@ const INITIAL_MANAGER_LISTINGS: FoodListing[] = [
     restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
     distance_km: 0.4,
     title: "Artisan Chocolate Croissant Box (Set of 3)",
-    description: "Flaky all-butter French croissants baked this morning, filled with Belgian dark chocolate ganache.",
+    description:
+      "Flaky all-butter French croissants baked this morning, filled with Belgian dark chocolate ganache.",
     category: "Bakery",
     quantity: 10,
     available_quantity: 7,
@@ -67,7 +68,8 @@ const INITIAL_MANAGER_LISTINGS: FoodListing[] = [
     restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
     distance_km: 0.4,
     title: "Cinnamon Brioche Spirals (Set of 2)",
-    description: "Spiced cinnamon rolls with cream cheese icing drizzle, packaged fresh for evening pickup.",
+    description:
+      "Spiced cinnamon rolls with cream cheese icing drizzle, packaged fresh for evening pickup.",
     category: "Bakery",
     quantity: 8,
     available_quantity: 2,
@@ -80,16 +82,24 @@ const INITIAL_MANAGER_LISTINGS: FoodListing[] = [
   },
 ];
 
+const categories = ["Bakery", "Meals", "Cafe", "Dessert", "Vegan"] as const;
+
+type Category = (typeof categories)[number];
+
 export function ManagerView() {
   const [listings, setListings] = useState<FoodListing[]>(INITIAL_MANAGER_LISTINGS);
   const [queue, setQueue] = useState<PickupQueueItem[]>(INITIAL_QUEUE);
   const [codeInput, setCodeInput] = useState("");
-  const [verifyMessage, setVerifyMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState<{
+    text: string;
+    success: boolean;
+  } | null>(null);
   const [isNewListingOpen, setIsNewListingOpen] = useState(false);
+  const [listingError, setListingError] = useState<string | null>(null);
+  const [queueFilter, setQueueFilter] = useState<"ALL" | "READY_FOR_PICKUP" | "COMPLETED">("ALL");
 
-  // New listing form state
   const [newTitle, setNewTitle] = useState("");
-  const [newCategory, setNewCategory] = useState<"Bakery" | "Meals" | "Cafe" | "Dessert" | "Vegan">("Bakery");
+  const [newCategory, setNewCategory] = useState<Category>("Bakery");
   const [newQuantity, setNewQuantity] = useState("10");
   const [newOriginalPrice, setNewOriginalPrice] = useState("350");
   const [newDiscountedPrice, setNewDiscountedPrice] = useState("140");
@@ -97,471 +107,502 @@ export function ManagerView() {
   const [newPickupEnd, setNewPickupEnd] = useState("9:30 PM");
   const [newDescription, setNewDescription] = useState("");
 
-  const pendingPickupsCount = queue.filter((q) => q.status === "READY_FOR_PICKUP").length;
+  const pendingPickupsCount = queue.filter((item) => item.status === "READY_FOR_PICKUP").length;
+  const completedPickupsCount = queue.filter((item) => item.status === "COMPLETED").length;
+  const activeListingsCount = listings.filter((item) => item.status === "ACTIVE").length;
   const totalRescuedToday = 14;
   const todayRevenue = 2180;
 
-  function handleVerifyCode(e: React.FormEvent) {
-    e.preventDefault();
+  const visibleQueue = useMemo(
+    () => queue.filter((item) => queueFilter === "ALL" || item.status === queueFilter),
+    [queue, queueFilter],
+  );
+
+  function showVerificationMessage(message: { text: string; success: boolean }) {
+    setVerifyMessage(message);
+    window.setTimeout(() => setVerifyMessage(null), 5000);
+  }
+
+  function handleVerifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const trimmed = codeInput.trim().toUpperCase();
     if (!trimmed) return;
 
     const foundItem = queue.find(
-      (item) => item.pickup_code.toUpperCase() === trimmed && item.status === "READY_FOR_PICKUP"
+      (item) => item.pickup_code.toUpperCase() === trimmed && item.status === "READY_FOR_PICKUP",
     );
 
-    if (foundItem) {
-      setQueue((prev) =>
-        prev.map((item) =>
-          item.order_id === foundItem.order_id ? { ...item, status: "COMPLETED" } : item
-        )
-      );
-      setVerifyMessage({
-        text: `Success! Code ${trimmed} confirmed for ${foundItem.customer_name}. Order marked completed.`,
-        success: true,
-      });
-      setCodeInput("");
-    } else {
-      setVerifyMessage({
-        text: `Invalid or already fulfilled pickup code "${trimmed}". Please check the customer's app screen.`,
+    if (!foundItem) {
+      showVerificationMessage({
+        text: `No pending pickup was found for “${trimmed}”. Check the code and try again.`,
         success: false,
       });
+      return;
     }
 
-    setTimeout(() => setVerifyMessage(null), 5000);
+    setQueue((previous) =>
+      previous.map((item) =>
+        item.order_id === foundItem.order_id ? { ...item, status: "COMPLETED" } : item,
+      ),
+    );
+    setCodeInput("");
+    showVerificationMessage({
+      text: `Pickup verified for ${foundItem.customer_name}. The order is marked as handed over.`,
+      success: true,
+    });
   }
 
   function handleCompletePickup(orderId: string) {
-    setQueue((prev) =>
-      prev.map((item) =>
-        item.order_id === orderId ? { ...item, status: "COMPLETED" } : item
-      )
+    const selected = queue.find((item) => item.order_id === orderId);
+    if (!selected || selected.status !== "READY_FOR_PICKUP") return;
+
+    setQueue((previous) =>
+      previous.map((item) =>
+        item.order_id === orderId ? { ...item, status: "COMPLETED" } : item,
+      ),
     );
   }
 
-  function handleCreateListing(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
+  function resetListingForm() {
+    setNewTitle("");
+    setNewCategory("Bakery");
+    setNewQuantity("10");
+    setNewOriginalPrice("350");
+    setNewDiscountedPrice("140");
+    setNewPickupStart("8:00 PM");
+    setNewPickupEnd("9:30 PM");
+    setNewDescription("");
+    setListingError(null);
+  }
+
+  function handleCreateListing(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setListingError(null);
+
+    const quantity = Number(newQuantity);
+    const originalPrice = Number(newOriginalPrice);
+    const discountedPrice = Number(newDiscountedPrice);
+
+    if (!newTitle.trim()) {
+      setListingError("Add a name for this surplus batch.");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      setListingError("Quantity must be a whole number greater than zero.");
+      return;
+    }
+    if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
+      setListingError("Enter a valid original price.");
+      return;
+    }
+    if (!Number.isFinite(discountedPrice) || discountedPrice <= 0 || discountedPrice > originalPrice) {
+      setListingError("Surplus price must be positive and no higher than the original price.");
+      return;
+    }
 
     const created: FoodListing = {
-      id: `fl-${Date.now().toString().slice(-4)}`,
+      id: `fl-${Date.now().toString().slice(-6)}`,
       restaurant_id: "rest-001",
       restaurant_name: "Test Cafe & Artisan Bakery",
       restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
       distance_km: 0.4,
       title: newTitle.trim(),
-      description: newDescription.trim() || "Fresh surplus batch prepared by our kitchen staff today.",
+      description:
+        newDescription.trim() || "Fresh surplus batch prepared by our kitchen staff today.",
       category: newCategory,
-      quantity: Number(newQuantity) || 5,
-      available_quantity: Number(newQuantity) || 5,
-      original_price: Number(newOriginalPrice) || 200,
-      discounted_price: Number(newDiscountedPrice) || 99,
-      pickup_start: newPickupStart,
-      pickup_end: newPickupEnd,
+      quantity,
+      available_quantity: quantity,
+      original_price: originalPrice,
+      discounted_price: discountedPrice,
+      pickup_start: newPickupStart.trim(),
+      pickup_end: newPickupEnd.trim(),
       status: "ACTIVE",
       dietary_tags: ["Fresh Batch", "Packaged for Pickup"],
     };
 
-    setListings([created, ...listings]);
+    setListings((previous) => [created, ...previous]);
     setIsNewListingOpen(false);
-
-    // Reset fields
-    setNewTitle("");
-    setNewDescription("");
+    resetListingForm();
   }
 
   return (
-    <main className="eco-container py-8 sm:py-12">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-8 border-b border-[var(--color-border)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="eco-badge eco-badge-neutral">
-              <IconChefHat size={14} className="text-[var(--color-primary)]" />
-              The Artisan Oven & Cafe
-            </span>
-            <span className="text-xs text-[var(--eco-ink-500)]">Indiranagar Branch</span>
-          </div>
-          <h1 className="eco-title mt-2 text-3xl sm:text-4xl">Kitchen Manager Hub</h1>
-          <p className="eco-copy mt-2 text-sm sm:text-base">
-            List today&apos;s unsold surplus batches, manage pickup queues, and verify customer pickup codes.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsNewListingOpen(true)}
-          className="eco-button eco-button-primary text-xs self-start sm:self-auto cursor-pointer"
-        >
-          <IconPlus size={16} />
-          Create Surplus Batch
-        </button>
-      </div>
-
-      {/* Metrics Row */}
-      <section className="mt-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <article className="eco-panel eco-stat bg-white">
-          <div className="eco-stat-label">
-            <span>Pending Pickups</span>
-            <span className="size-2 rounded-full bg-[var(--eco-amber-500)] animate-pulse" />
-          </div>
-          <p className="eco-stat-value text-[var(--eco-amber-700)]">{pendingPickupsCount}</p>
-        </article>
-
-        <article className="eco-panel eco-stat bg-white">
-          <div className="eco-stat-label">Active Surplus Batches</div>
-          <p className="eco-stat-value">{listings.length}</p>
-        </article>
-
-        <article className="eco-panel eco-stat bg-white">
-          <div className="eco-stat-label">Units Rescued Today</div>
-          <p className="eco-stat-value text-[var(--color-primary)]">{totalRescuedToday}</p>
-        </article>
-
-        <article className="eco-panel eco-stat bg-white">
-          <div className="eco-stat-label">Rescued Revenue</div>
-          <p className="eco-stat-value">₹{todayRevenue}</p>
-        </article>
-      </section>
-
-      {/* Quick Counter Pickup Code Validator Bar */}
-      <section className="mt-8 rounded-2xl border-2 border-[var(--color-primary)] bg-[var(--eco-leaf-50)] p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-bold text-[var(--color-foreground)] flex items-center gap-2">
-              <IconCheckCircle size={18} className="text-[var(--color-primary)]" />
-              Counter Pickup Code Verification
-            </h2>
-            <p className="text-xs text-[var(--eco-ink-700)] mt-0.5">
-              Ask the customer to show their 4-digit code (e.g. ECO-4829) to verify and hand over the meal.
+    <main className="min-h-screen bg-[#FBFAF4] px-4 py-7 text-[#1B2B21] sm:px-6 sm:py-10 lg:px-10">
+      <div className="mx-auto w-full max-w-7xl">
+        {/* Page heading — navigation is intentionally handled by the parent layout. */}
+        <header className="flex flex-col gap-5 border-b border-[#E6E8DF] pb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#D8E8D9] bg-[#EDF5EC] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#285D3B]">
+                <IconChefHat size={14} /> The Artisan Oven & Cafe
+              </span>
+              <span className="text-xs font-medium text-[#788279]">Indiranagar Branch</span>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#568064]">Kitchen operations</p>
+            <h1 className="mt-2 text-3xl font-black tracking-[-0.045em] text-[#193B28] sm:text-4xl">
+              Inventory & pickups<span className="text-[#D99A3D]">.</span>
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#6B756D]">
+              Keep surplus batches moving and make every customer pickup smooth.
             </p>
           </div>
-
-          <form onSubmit={handleVerifyCode} className="flex gap-2 min-w-[280px]">
-            <input
-              type="text"
-              placeholder="e.g. ECO-4829"
-              value={codeInput}
-              onChange={(e) => setCodeInput(e.target.value)}
-              className="eco-field font-mono font-bold tracking-wider text-sm uppercase bg-white max-w-[180px]"
-            />
-            <button
-              type="submit"
-              className="eco-button eco-button-primary text-xs px-4 font-bold whitespace-nowrap cursor-pointer"
-            >
-              Verify Code
-            </button>
-          </form>
-        </div>
-
-        {verifyMessage && (
-          <div
-            className={`mt-4 rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
-              verifyMessage.success
-                ? "bg-white text-[var(--color-primary)] border border-[var(--color-primary)]"
-                : "bg-[var(--eco-rose-50)] text-[var(--color-danger)] border border-[var(--eco-rose-100)]"
-            }`}
+          <button
+            type="button"
+            onClick={() => setIsNewListingOpen(true)}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1D4A30] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(29,74,48,0.16)] transition hover:-translate-y-0.5 hover:bg-[#173C27] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4A30]/20"
           >
-            {verifyMessage.success ? <IconCheckCircle size={16} /> : <IconAlertCircle size={16} />}
-            <span>{verifyMessage.text}</span>
-          </div>
-        )}
-      </section>
+            <IconPlus size={17} /> Create surplus batch
+          </button>
+        </header>
 
-      {/* Two Column Section: Live Pickup Queue & Active Food Batches */}
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        {/* Left: Live Pickup Queue */}
-        <section id="pickups" className="eco-panel p-6 bg-white space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)]">
-            <div>
-              <h2 className="font-bold text-lg text-[var(--color-foreground)]">
-                Today&apos;s Pickup Orders
-              </h2>
-              <p className="text-xs text-[var(--eco-ink-500)]">
-                Orders placed by local customers waiting for collection
-              </p>
-            </div>
-            <span className="eco-badge eco-badge-neutral text-xs">
-              {queue.length} Total Orders
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {queue.map((item) => (
-              <div
-                key={item.order_id}
-                className={`rounded-xl border p-4 transition ${
-                  item.status === "COMPLETED"
-                    ? "bg-[var(--eco-canvas-100)] border-[var(--eco-line-200)] opacity-75"
-                    : "bg-white border-[var(--color-border)] shadow-xs"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[var(--eco-leaf-50)] text-[var(--color-primary)] border border-[var(--eco-leaf-100)]">
-                        {item.pickup_code}
-                      </span>
-                      <span className="text-xs font-semibold text-[var(--color-foreground)]">
-                        {item.customer_name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--eco-ink-700)] mt-1">
-                      {item.items_summary}
-                    </p>
-                    <div className="mt-2 flex items-center gap-3 text-[11px] text-[var(--eco-ink-500)]">
-                      <span>Window: {item.pickup_window}</span>
-                      <span>•</span>
-                      <span className="font-bold text-[var(--color-foreground)] tabular-nums">
-                        ₹{item.total_amount} (Paid)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    {item.status === "COMPLETED" ? (
-                      <span className="eco-badge eco-badge-neutral text-[11px]">
-                        ✓ Handed Over
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleCompletePickup(item.order_id)}
-                        className="eco-button eco-button-primary text-xs px-3 py-1.5 cursor-pointer"
-                      >
-                        Hand Over
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Operational metrics */}
+        <section aria-label="Today's performance" className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <MetricCard label="Pending pickups" value={String(pendingPickupsCount)} detail="Ready for collection" tone="amber" marker="01" />
+          <MetricCard label="Active batches" value={String(activeListingsCount)} detail={`${listings.length} total listings`} tone="green" marker="02" />
+          <MetricCard label="Units rescued today" value={String(totalRescuedToday)} detail="Food kept in circulation" tone="green" marker="03" />
+          <MetricCard label="Today's revenue" value={`₹${todayRevenue.toLocaleString("en-IN")}`} detail="From surplus orders" tone="cream" marker="04" />
         </section>
 
-        {/* Right: Active Food Batches */}
-        <section id="listings" className="eco-panel p-6 bg-white space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)]">
+        {/* Pickup verification panel */}
+        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#D6E5D7] bg-[#EAF3E9] shadow-[0_12px_35px_rgba(34,75,47,0.06)]">
+          <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <h2 className="font-bold text-lg text-[var(--color-foreground)]">
-                Active Surplus Batches
-              </h2>
-              <p className="text-xs text-[var(--eco-ink-500)]">
-                Inventory currently listed on the customer marketplace
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#39704A]">
+                <span className="size-1.5 rounded-full bg-[#3D9558]" /> Counter desk
+              </div>
+              <h2 className="mt-3 text-xl font-black tracking-tight text-[#193B28] sm:text-2xl">Verify a customer pickup</h2>
+              <p className="mt-1 max-w-xl text-sm leading-6 text-[#607365]">
+                Ask the customer for the code in their order confirmation, verify it, then hand over the packed order.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsNewListingOpen(true)}
-              className="text-xs font-bold text-[var(--color-primary)] hover:underline cursor-pointer"
+            <form onSubmit={handleVerifyCode} className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+              <label htmlFor="pickup-code" className="sr-only">Pickup code</label>
+              <input
+                id="pickup-code"
+                type="text"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoComplete="off"
+                placeholder="ECO-4829"
+                value={codeInput}
+                onChange={(event) => setCodeInput(event.target.value.toUpperCase())}
+                className="min-h-12 w-full rounded-2xl border border-[#CADCCB] bg-white px-4 font-mono text-sm font-bold tracking-[0.12em] text-[#193B28] outline-none placeholder:font-medium placeholder:tracking-wider placeholder:text-[#A0AAA1] focus:border-[#2F7446] focus:ring-4 focus:ring-[#2F7446]/10 sm:w-44"
+              />
+              <button
+                type="submit"
+                disabled={!codeInput.trim()}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#1D4A30] px-5 text-sm font-bold text-white transition hover:bg-[#173C27] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <IconCheckCircle size={16} /> Verify code
+              </button>
+            </form>
+          </div>
+          {verifyMessage && (
+            <div
+              role="status"
+              className={`mx-5 mb-5 flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm font-medium sm:mx-7 sm:mb-7 ${
+                verifyMessage.success
+                  ? "border-[#C9E2CE] bg-white text-[#28633B]"
+                  : "border-[#F0D1C8] bg-[#FFF3EF] text-[#A34332]"
+              }`}
             >
-              + New Batch
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {listings.map((listing) => (
-              <div
-                key={listing.id}
-                className="rounded-xl border border-[var(--color-border)] p-4 bg-[var(--eco-canvas-50)] space-y-2"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="eco-badge eco-badge-neutral text-[10px] mb-1">
-                      {listing.category}
-                    </span>
-                    <h3 className="font-bold text-sm text-[var(--color-foreground)]">
-                      {listing.title}
-                    </h3>
-                  </div>
-                  <span className="eco-badge eco-badge-success text-xs font-mono">
-                    {listing.available_quantity}/{listing.quantity} left
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-[var(--eco-line-200)] text-xs">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-bold text-[var(--color-foreground)] tabular-nums">
-                      ₹{listing.discounted_price}
-                    </span>
-                    <span className="text-[var(--eco-ink-500)] line-through tabular-nums text-[11px]">
-                      ₹{listing.original_price}
-                    </span>
-                  </div>
-                  <span className="text-[var(--eco-ink-500)] text-[11px]">
-                    Pickup: {listing.pickup_start} – {listing.pickup_end}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              {verifyMessage.success ? <IconCheckCircle size={17} /> : <IconAlertCircle size={17} />}
+              <span>{verifyMessage.text}</span>
+            </div>
+          )}
         </section>
-      </div>
 
-      {/* New Listing Batch Modal */}
-      {isNewListingOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-2">
-                <span className="grid size-8 place-items-center rounded-lg bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
-                  <IconChefHat size={18} />
-                </span>
-                <h3 className="text-base font-bold text-[var(--color-foreground)]">
-                  Create New Surplus Batch
-                </h3>
+        {/* Work areas */}
+        <div className="mt-7 grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+          <section id="pickups" className="rounded-[28px] border border-[#E6E8DF] bg-white p-5 shadow-[0_8px_28px_rgba(34,49,37,0.035)] sm:p-6">
+            <div className="flex flex-col gap-3 border-b border-[#EEF0E9] pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6B8B72]">Collection desk</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-[#193B28]">Today&apos;s pickup queue</h2>
+                <p className="mt-1 text-xs text-[#788279]">Orders waiting to be collected or already handed over.</p>
+              </div>
+              <span className="inline-flex w-fit items-center rounded-full bg-[#F2F5EE] px-3 py-1.5 text-xs font-bold text-[#526B56]">
+                {queue.length} orders · {pendingPickupsCount} pending
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter pickup orders">
+              {([
+                ["ALL", "All orders"],
+                ["READY_FOR_PICKUP", "Awaiting pickup"],
+                ["COMPLETED", "Handed over"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setQueueFilter(value)}
+                  aria-pressed={queueFilter === value}
+                  className={`rounded-full px-3.5 py-2 text-xs font-bold transition ${
+                    queueFilter === value
+                      ? "bg-[#1D4A30] text-white shadow-sm"
+                      : "border border-[#E5E9E1] bg-white text-[#667268] hover:border-[#BDD2BF] hover:text-[#285D3B]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {visibleQueue.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#DDE5DA] bg-[#FBFCF8] px-5 py-10 text-center">
+                  <div className="mx-auto grid size-11 place-items-center rounded-2xl bg-[#EEF5EC] text-[#4A8056]">✓</div>
+                  <p className="mt-3 text-sm font-bold text-[#2B4933]">No orders in this view</p>
+                  <p className="mt-1 text-xs text-[#859087]">Try another filter or check back when a customer places an order.</p>
+                </div>
+              ) : (
+                visibleQueue.map((item) => (
+                  <article
+                    key={item.order_id}
+                    className={`rounded-2xl border p-4 transition ${
+                      item.status === "COMPLETED"
+                        ? "border-[#E8ECE5] bg-[#F8FAF6]"
+                        : "border-[#DCE8DC] bg-white hover:border-[#BBD3BE] hover:shadow-[0_8px_24px_rgba(34,75,47,0.06)]"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-lg bg-[#EDF5EC] px-2.5 py-1 font-mono text-xs font-extrabold tracking-wider text-[#285D3B]">{item.pickup_code}</span>
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === "COMPLETED" ? "bg-[#EEF0EC] text-[#69756A]" : "bg-[#FFF3D9] text-[#93651E]"}`}>
+                            {item.status === "COMPLETED" ? "Handed over" : "Awaiting pickup"}
+                          </span>
+                        </div>
+                        <h3 className="mt-2 text-sm font-extrabold text-[#263A2B]">{item.customer_name}</h3>
+                        <p className="mt-1 text-xs leading-5 text-[#727D73]">{item.items_summary}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#7D887E]">
+                          <span>{item.pickup_window}</span>
+                          <span className="font-bold text-[#344C38]">₹{item.total_amount.toLocaleString("en-IN")} paid</span>
+                        </div>
+                      </div>
+                      {item.status === "READY_FOR_PICKUP" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCompletePickup(item.order_id)}
+                          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[#C9DCCB] bg-[#F0F6EF] px-4 text-xs font-extrabold text-[#2C6840] transition hover:bg-[#E5F0E4]"
+                        >
+                          Mark handed over
+                        </button>
+                      ) : (
+                        <span className="inline-flex min-h-9 shrink-0 items-center gap-1.5 text-xs font-bold text-[#6E846F]">
+                          <IconCheckCircle size={15} /> Completed
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+            {completedPickupsCount > 0 && (
+              <p className="mt-4 text-[11px] text-[#879087]">{completedPickupsCount} pickup{completedPickupsCount === 1 ? "" : "s"} completed today.</p>
+            )}
+          </section>
+
+          <section id="listings" className="rounded-[28px] border border-[#E6E8DF] bg-white p-5 shadow-[0_8px_28px_rgba(34,49,37,0.035)] sm:p-6">
+            <div className="flex items-end justify-between gap-3 border-b border-[#EEF0E9] pb-5">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6B8B72]">Surplus inventory</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-[#193B28]">Your active batches</h2>
+                <p className="mt-1 text-xs text-[#788279]">Track remaining units and pickup windows.</p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsNewListingOpen(false)}
-                className="rounded-lg p-1 text-[var(--color-muted)] hover:bg-[var(--eco-canvas-100)] transition"
+                onClick={() => setIsNewListingOpen(true)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAF3E9] px-3.5 py-2 text-xs font-extrabold text-[#2D6A40] transition hover:bg-[#DDECDD]"
               >
-                <IconX size={18} />
+                <IconPlus size={14} /> New batch
               </button>
             </div>
 
-            <form onSubmit={handleCreateListing} className="mt-4 space-y-4">
+            <div className="mt-4 space-y-3">
+              {listings.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#DDE5DA] bg-[#FBFCF8] px-5 py-10 text-center">
+                  <p className="text-sm font-bold text-[#2B4933]">No batches yet</p>
+                  <p className="mt-1 text-xs text-[#859087]">Create your first surplus listing to make it available to customers.</p>
+                </div>
+              ) : (
+                listings.map((listing) => {
+                  const soldUnits = Math.max(0, listing.quantity - listing.available_quantity);
+                  const soldPercent = listing.quantity > 0 ? Math.min(100, (soldUnits / listing.quantity) * 100) : 0;
+                  const discount = listing.original_price > 0
+                    ? Math.round((1 - listing.discounted_price / listing.original_price) * 100)
+                    : 0;
+
+                  return (
+                    <article key={listing.id} className="rounded-2xl border border-[#E7EBE4] bg-[#FCFDF9] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="inline-flex rounded-full bg-[#EEF4EA] px-2.5 py-1 text-[10px] font-bold text-[#5E765D]">{listing.category}</span>
+                          <h3 className="mt-2 text-sm font-extrabold leading-5 text-[#263A2B]">{listing.title}</h3>
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-[#7B857B]">{listing.description}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${listing.available_quantity <= 2 ? "bg-[#FFF1DC] text-[#9A6721]" : "bg-[#E9F4E9] text-[#347047]"}`}>
+                          {listing.available_quantity === 0 ? "Sold out" : `${listing.available_quantity} left`}
+                        </span>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-1.5 flex items-center justify-between text-[10px] font-semibold text-[#7B867B]">
+                          <span>{soldUnits} of {listing.quantity} units claimed</span>
+                          <span>{Math.round(soldPercent)}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-[#E9EDE6]">
+                          <div className="h-full rounded-full bg-[#4D8A59] transition-all" style={{ width: `${soldPercent}%` }} />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-[#EDF0E9] pt-3">
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-base font-black tabular-nums text-[#1D4A30]">₹{listing.discounted_price}</span>
+                            <span className="text-xs text-[#9AA39A] line-through">₹{listing.original_price}</span>
+                            {discount > 0 && <span className="rounded-full bg-[#F9EEDC] px-2 py-0.5 text-[9px] font-extrabold text-[#946B2D]">{discount}% off</span>}
+                          </div>
+                          <p className="mt-1 text-[10px] text-[#879087]">Pickup {listing.pickup_start} – {listing.pickup_end}</p>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#718073]">{listing.status.replaceAll("_", " ")}</span>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Create listing modal */}
+      {isNewListingOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#102719]/55 p-3 backdrop-blur-sm sm:p-5"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsNewListingOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-listing-title"
+            className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[28px] border border-[#E3E9DE] bg-[#FBFAF4] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.25)] sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[#E6EAE1] pb-5">
               <div>
-                <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                  Food Item Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Sourdough Loaf & Baguette Surprise Pack"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="eco-field text-sm"
-                />
+                <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-[#E8F1E6] text-[#2D6A40]"><IconChefHat size={19} /></span>
+                <p className="mt-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6B8B72]">New surplus listing</p>
+                <h2 id="new-listing-title" className="mt-1 text-xl font-black tracking-tight text-[#193B28]">Create a batch</h2>
+                <p className="mt-1 text-xs leading-5 text-[#788279]">Share the details customers need to discover and pick up this food.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsNewListingOpen(false); setListingError(null); }}
+                className="grid size-9 shrink-0 place-items-center rounded-full border border-[#E3E8DF] bg-white text-[#69766B] transition hover:bg-[#F0F3EC] hover:text-[#233C2A]"
+                aria-label="Close create listing dialog"
+              >
+                <IconX size={17} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateListing} className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="listing-title" className="mb-1.5 block text-xs font-bold text-[#405746]">Food item title <span className="text-[#B76E42]">*</span></label>
+                <input id="listing-title" type="text" required maxLength={150} placeholder="e.g. Sourdough loaf and baguette pack" value={newTitle} onChange={(event) => setNewTitle(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none transition placeholder:text-[#A3ACA3] focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as "Bakery" | "Meals" | "Cafe" | "Dessert" | "Vegan")}
-                    className="eco-field text-sm"
-                  >
-                    <option value="Bakery">Bakery</option>
-                    <option value="Meals">Meals</option>
-                    <option value="Cafe">Cafe</option>
-                    <option value="Dessert">Dessert</option>
-                    <option value="Vegan">Vegan</option>
+                  <label htmlFor="listing-category" className="mb-1.5 block text-xs font-bold text-[#405746]">Category</label>
+                  <select id="listing-category" value={newCategory} onChange={(event) => setNewCategory(event.target.value as Category)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10">
+                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Quantity (Batch Units) *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={newQuantity}
-                    onChange={(e) => setNewQuantity(e.target.value)}
-                    className="eco-field text-sm tabular-nums"
-                  />
+                  <label htmlFor="listing-quantity" className="mb-1.5 block text-xs font-bold text-[#405746]">Available units</label>
+                  <input id="listing-quantity" type="number" min="1" step="1" required value={newQuantity} onChange={(event) => setNewQuantity(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm tabular-nums text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Original Dine-in Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={newOriginalPrice}
-                    onChange={(e) => setNewOriginalPrice(e.target.value)}
-                    className="eco-field text-sm tabular-nums"
-                  />
+                  <label htmlFor="listing-original-price" className="mb-1.5 block text-xs font-bold text-[#405746]">Original price (₹)</label>
+                  <input id="listing-original-price" type="number" min="0.01" step="0.01" required value={newOriginalPrice} onChange={(event) => setNewOriginalPrice(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm tabular-nums text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Surplus Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={newDiscountedPrice}
-                    onChange={(e) => setNewDiscountedPrice(e.target.value)}
-                    className="eco-field text-sm tabular-nums"
-                  />
+                  <label htmlFor="listing-discounted-price" className="mb-1.5 block text-xs font-bold text-[#405746]">Surplus price (₹)</label>
+                  <input id="listing-discounted-price" type="number" min="0.01" step="0.01" required value={newDiscountedPrice} onChange={(event) => setNewDiscountedPrice(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm tabular-nums text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Pickup Window Start *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 8:00 PM"
-                    value={newPickupStart}
-                    onChange={(e) => setNewPickupStart(e.target.value)}
-                    className="eco-field text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                    Pickup Window End *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 9:30 PM"
-                    value={newPickupEnd}
-                    onChange={(e) => setNewPickupEnd(e.target.value)}
-                    className="eco-field text-sm"
-                  />
+              <div className="rounded-2xl border border-[#E5EBDD] bg-white/70 p-4">
+                <p className="mb-3 text-xs font-extrabold text-[#405746]">Customer pickup window</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="pickup-start" className="mb-1.5 block text-[11px] font-semibold text-[#748075]">Starts at</label>
+                    <input id="pickup-start" type="text" required placeholder="8:00 PM" value={newPickupStart} onChange={(event) => setNewPickupStart(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
+                  </div>
+                  <div>
+                    <label htmlFor="pickup-end" className="mb-1.5 block text-[11px] font-semibold text-[#748075]">Ends at</label>
+                    <input id="pickup-end" type="text" required placeholder="9:30 PM" value={newPickupEnd} onChange={(event) => setNewPickupEnd(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1">
-                  Description & Dietary Highlights
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Describe the batch, freshness, ingredients, or allergens..."
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  className="eco-field p-3 text-sm h-auto"
-                />
+                <label htmlFor="listing-description" className="mb-1.5 block text-xs font-bold text-[#405746]">Description <span className="font-medium text-[#8A958A]">(optional)</span></label>
+                <textarea id="listing-description" rows={3} maxLength={500} placeholder="Describe the batch, freshness, ingredients or allergens..." value={newDescription} onChange={(event) => setNewDescription(event.target.value)} className="w-full resize-y rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none placeholder:text-[#A3ACA3] focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
               </div>
 
-              <div className="pt-4 border-t border-[var(--color-border)] flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsNewListingOpen(false)}
-                  className="eco-button eco-button-secondary text-xs flex-1 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="eco-button eco-button-primary text-xs flex-2 font-bold cursor-pointer"
-                >
-                  Publish Surplus Batch
+              {listingError && (
+                <div role="alert" className="flex items-start gap-2 rounded-xl border border-[#F0D1C8] bg-[#FFF3EF] px-3.5 py-3 text-xs font-medium text-[#A34332]">
+                  <IconAlertCircle size={16} className="shrink-0" /> {listingError}
+                </div>
+              )}
+
+              <div className="flex flex-col-reverse gap-2 border-t border-[#E6EAE1] pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => { setIsNewListingOpen(false); setListingError(null); }} className="min-h-11 rounded-full border border-[#D8E1D6] bg-white px-5 text-sm font-bold text-[#5C6B5E] transition hover:bg-[#F4F6F0]">Cancel</button>
+                <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#1D4A30] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(29,74,48,0.16)] transition hover:bg-[#173C27]">
+                  <IconPlus size={16} /> Publish batch
                 </button>
               </div>
             </form>
-          </div>
+          </section>
         </div>
       )}
     </main>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  detail,
+  tone,
+  marker,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "green" | "amber" | "cream";
+  marker: string;
+}) {
+  const toneStyles = {
+    green: "bg-[#EDF5EC] text-[#2E7143]",
+    amber: "bg-[#FBF2E3] text-[#9A702D]",
+    cream: "bg-[#F4F1E7] text-[#746743]",
+  };
+
+  return (
+    <article className="rounded-[22px] border border-[#E6E8DF] bg-white p-4 shadow-[0_6px_20px_rgba(34,49,37,0.03)] sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#7D897E]">{label}</p>
+        <span className={`rounded-lg px-2 py-1 text-[9px] font-black tracking-wider ${toneStyles[tone]}`}>{marker}</span>
+      </div>
+      <p className="mt-3 text-2xl font-black tracking-tight text-[#193B28] sm:text-3xl">{value}</p>
+      <p className="mt-1 text-[10px] font-medium text-[#8A948A]">{detail}</p>
+    </article>
   );
 }

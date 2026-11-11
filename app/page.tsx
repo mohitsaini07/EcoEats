@@ -10,6 +10,7 @@ import {
   IconShoppingBag,
 } from "@/components/icons";
 import { SAMPLE_LISTINGS } from "@/lib/data/sample-listings";
+import { HowEcoEatsWorks } from "@/components/how-it-works";
 
 export default function Home() {
   return (
@@ -37,7 +38,7 @@ export default function Home() {
               <div className="eco-hero-actions">
                 <Link href="/signup" className="eco-button eco-button-hero">
                   Find food nearby <IconArrowRight size={18} />
-                </Link> 
+                </Link>
                 <a
                   href="#how-it-works"
                   className="eco-button eco-button-hero-quiet"
@@ -79,8 +80,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        <section id="how-it-works" className="eco-trust-section">
+        <section id="about" className="eco-trust-section">
           <div className="eco-container">
             <div className="eco-trust-card">
               <div className="eco-trust-grid">
@@ -492,50 +492,178 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="surplus-preview" className="eco-listings-section">
-          <div className="eco-container">
-            <div className="eco-section-heading eco-section-heading-row">
-              <div>
-                <p className="eco-eyebrow">Tonight&apos;s good saves</p>
-                <h2>Freshly listed near you.</h2>
+        <HowEcoEatsWorks/>
+        
+        <section
+          id="surplus-preview"
+          className="relative overflow-hidden bg-[#F8F7F0] py-16 sm:py-20 lg:py-24"
+        >
+          {/* Soft brand accents */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-28 top-20 size-72 rounded-full bg-[#DDEBDD]/60 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-24 bottom-0 size-80 rounded-full bg-[#F2E7CF]/55 blur-3xl"
+          />
+
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D5E4D5] bg-white/75 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#285B3B] shadow-sm">
+                  <span className="size-1.5 rounded-full bg-[#4E8B5C]" />
+                  Tonight&apos;s good saves
+                </div>
+                <h2 className="text-3xl font-black tracking-[-0.04em] text-[#183B29] sm:text-4xl lg:text-5xl">
+                  Fresh finds.{" "}
+                  <span className="text-[#54835B]">Less waste.</span>
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-[#69766B] sm:text-base">
+                  Good food from nearby kitchens, listed at lovely prices and
+                  ready for you to pick up.
+                </p>
               </div>
-              <Link href="/marketplace" className="eco-text-link">
-                Browse marketplace <IconArrowRight size={16} />
+
+              <Link
+                href="/marketplace"
+                className="group inline-flex w-fit items-center gap-2 rounded-full border border-[#C9D9CA] bg-white/80 px-5 py-3 text-sm font-bold text-[#245537] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#285B3B] hover:bg-[#285B3B] hover:text-white hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6D9B76]/25"
+              >
+                Browse marketplace
+                <IconArrowRight
+                  size={16}
+                  className="transition-transform duration-200 group-hover:translate-x-1"
+                />
               </Link>
             </div>
-            <div className="eco-mini-listings">
-              {SAMPLE_LISTINGS.slice(0, 3).map((listing) => (
-                <article className="eco-mini-listing" key={listing.id}>
-                  <img src={listing.image_url} className="eco-mini-image" alt={listing.title} />
-                  <div className="p-4">
-                  <div className="eco-mini-listing-head">
-                    <span>{listing.category}</span>
-                    <strong>
-                      {Math.round(
-                        (1 -
-                          listing.discounted_price / listing.original_price) *
-                          100,
-                      )}
-                      % off
-                    </strong>
-                  </div>
-                  <h3>{listing.title}</h3>
-                  <div className="flex items-center gap-2 mt-4 mb-1">
-                    <IconMapPin className="" size={14} /> 
-                    {listing.restaurant_name} · <br />{" "}
-                  </div>
-                  <p className="text-xs border border-green-400 rounded-full px-1 w-max">{listing.distance_km} km</p>
-                  <div className="eco-mini-listing-foot">
-                    <b>₹{listing.discounted_price}</b>
-                    <del>₹{listing.original_price}</del>
-                    <Link href="/marketplace">
-                      Reserve <IconArrowRight size={14} />
-                    </Link>
-                  </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+
+            {SAMPLE_LISTINGS.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-[#C9D9CA] bg-white/70 px-6 py-12 text-center">
+                <p className="text-base font-bold text-[#183B29]">
+                  Fresh finds are on their way.
+                </p>
+                <p className="mt-2 text-sm text-[#69766B]">
+                  Check the marketplace again soon for nearby surplus food.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                {SAMPLE_LISTINGS.map((listing) => {
+                  const discountPercent =
+                    listing.original_price > 0
+                      ? Math.round(
+                          (1 -
+                            listing.discounted_price / listing.original_price) *
+                            100,
+                        )
+                      : 0;
+
+                  return (
+                    <article
+                      key={listing.id}
+                      className="group overflow-hidden rounded-[1.6rem] border border-[#E4E6DC] bg-white shadow-[0_8px_30px_rgba(28,61,39,0.055)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#C7D8C8] hover:shadow-[0_18px_45px_rgba(28,61,39,0.12)]"
+                    >
+                      <Link
+                        href="/marketplace"
+                        aria-label={`Explore ${listing.title} in the marketplace`}
+                        className="block focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#6D9B76]/40"
+                      >
+                        <div className="relative h-56 overflow-hidden bg-[#EEF1E9] sm:h-60">
+                          <img
+                            src={
+                              listing.image_url ||
+                              "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=85&w=1000"
+                            }
+                            alt={listing.title}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#102719]/45 via-transparent to-[#102719]/5" />
+
+                          <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#285B3B] shadow-sm backdrop-blur">
+                            {listing.category}
+                          </span>
+
+                          {discountPercent > 0 && (
+                            <span className="absolute right-4 top-4 rounded-full bg-[#E7B85E] px-3 py-1.5 text-[11px] font-extrabold text-[#3D2B0D] shadow-sm">
+                              {discountPercent}% off
+                            </span>
+                          )}
+
+                          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
+                            <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#173D2A]/85 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md">
+                              <IconMapPin
+                                size={13}
+                                className="shrink-0 text-[#C5E1C9]"
+                              />
+                              <span className="truncate">
+                                {listing.restaurant_name}
+                              </span>
+                            </span>
+                            <span className="shrink-0 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-[#285B3B] shadow-sm backdrop-blur">
+                              {listing.distance_km} km away
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+
+                      <div className="p-5 sm:p-6">
+                        <div className="flex min-h-[3.25rem] items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 text-lg font-extrabold leading-snug tracking-[-0.02em] text-[#1C3525] transition-colors group-hover:text-[#356B45]">
+                              {listing.title}
+                            </h3>
+                            <p className="mt-1 text-xs text-[#839084]">
+                              From a nearby local kitchen
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 flex items-end justify-between gap-3 border-t border-[#EEF0E9] pt-4">
+                          <div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-black tracking-tight text-[#183B29]">
+                                ₹
+                                {listing.discounted_price.toLocaleString(
+                                  "en-IN",
+                                )}
+                              </span>
+                              <span className="text-sm font-medium text-[#A2AAA0] line-through">
+                                ₹
+                                {listing.original_price.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-bold text-[#54835B]">
+                              You save ₹
+                              {(
+                                listing.original_price -
+                                listing.discounted_price
+                              ).toLocaleString("en-IN")}
+                            </p>
+                          </div>
+
+                          <Link
+                            href="/marketplace"
+                            className="group/button inline-flex shrink-0 items-center gap-2 rounded-full bg-[#285B3B] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-[#1B452E] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6D9B76]/30"
+                          >
+                            View deal
+                            <IconArrowRight
+                              size={14}
+                              className="transition-transform group-hover/button:translate-x-0.5"
+                            />
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="mt-6 text-center text-[11px] font-medium text-[#879287]">
+              Browse, add to cart and pay online. Pick up directly from the
+              kitchen.
+            </p>
           </div>
         </section>
 

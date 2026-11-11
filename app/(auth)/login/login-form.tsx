@@ -12,6 +12,23 @@ import {
   IconArrowRight,
 } from "@/components/icons";
 
+const DEMO_ACCOUNTS = [
+  {
+    label: "Customer",
+    description: "Explore surplus food and manage pickups",
+    email: "customer@gmail.com",
+    password: "password123",
+    icon: IconShoppingBag,
+  },
+  {
+    label: "Kitchen manager",
+    description: "Manage a restaurant and its listings",
+    email: "manager@gmail.com",
+    password: "password123",
+    icon: IconChefHat,
+  },
+] as const;
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,179 +38,207 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    urlError ? decodeURIComponent(urlError) : null
-  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(urlError);
   const [pending, setPending] = useState(false);
+
+  // Demo accounts are useful locally, but public test credentials should not
+  // be exposed as a production sign-in shortcut.
+  const showDemoAccess = process.env.NODE_ENV !== "production";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+
     setErrorMessage(null);
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      setErrorMessage("Please enter your email address.");
+      setErrorMessage("Enter the email address associated with your account.");
       return;
     }
+
+    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setErrorMessage("Enter a valid email address.");
+      return;
+    }
+
     if (!password) {
-      setErrorMessage("Please enter your password.");
+      setErrorMessage("Enter your password to continue.");
       return;
     }
 
     setPending(true);
 
     try {
-      const { error } = await createClient().auth.signInWithPassword({
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes("invalid login credentials")) {
-          setErrorMessage("Invalid email or password. Please verify your credentials.");
-        } else if (error.message.toLowerCase().includes("email not confirmed")) {
-          setErrorMessage("Please confirm your email address before signing in. Check your inbox.");
+        const normalizedMessage = error.message.toLowerCase();
+
+        if (normalizedMessage.includes("invalid login credentials")) {
+          setErrorMessage("Those details don't match an account. Check your email and password and try again.");
+        } else if (normalizedMessage.includes("email not confirmed")) {
+          setErrorMessage("Your email hasn't been confirmed yet. Check your inbox for the confirmation link.");
+        } else if (normalizedMessage.includes("too many requests")) {
+          setErrorMessage("Too many sign-in attempts. Please wait a moment before trying again.");
         } else {
-          setErrorMessage(error.message);
+          setErrorMessage("We couldn't sign you in right now. Please try again in a moment.");
         }
+
         setPending(false);
         return;
       }
 
-      // Safe redirection: only allow relative paths to prevent open redirect attacks
-      const destination =
-        redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+      // Only accept same-site relative destinations. Reject protocol-relative
+      // URLs and backslash variants that can be interpreted unexpectedly.
+      const safeDestination =
+        redirectTo &&
+        redirectTo.startsWith("/") &&
+        !redirectTo.startsWith("//") &&
+        !redirectTo.includes("\\")
           ? redirectTo
           : "/app";
 
-      router.replace(destination);
+      router.replace(safeDestination);
       router.refresh();
     } catch {
-      setErrorMessage("An unexpected authentication error occurred.");
+      setErrorMessage("An unexpected error occurred. Please try signing in again.");
       setPending(false);
     }
   }
 
-  function fillDemo(demoEmail: string, demoPass: string) {
+  function fillDemo(demoEmail: string, demoPassword: string) {
+    if (pending) return;
     setEmail(demoEmail);
-    setPassword(demoPass);
+    setPassword(demoPassword);
     setErrorMessage(null);
   }
 
   return (
     <div className="space-y-6">
-      {/* Interactive 1-Click Demo Section */}
-      <div className="rounded-xl border border-[var(--color-primary)]/20 bg-gradient-to-b from-[var(--eco-canvas-100)] to-[var(--eco-canvas-50)] p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <IconSparkles size={14} className="text-[var(--color-primary)] animate-pulse" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--eco-ink-700)]">
-              Quick Demo Access
-            </p>
+      {showDemoAccess && (
+        <section
+          aria-label="Demo account shortcuts"
+          className="overflow-hidden rounded-2xl border border-[#dce9dd] bg-[#f3f8f1]"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-[#e2ecdf] px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-8 place-items-center rounded-xl bg-white text-[#286342] shadow-sm">
+                <IconSparkles size={15} />
+              </span>
+              <div>
+                <p className="text-xs font-extrabold text-[#1d3e2c]">Explore the demo</p>
+                <p className="text-[10px] text-[#647768]">Fill a test account in one click</p>
+              </div>
+            </div>
+            <span className="rounded-full border border-[#d7e6d6] bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#52745c]">
+              Demo access
+            </span>
           </div>
-          <span className="inline-flex items-center rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-primary)]">
-            Click to auto-fill
-          </span>
-        </div>
 
-        <p className="text-xs text-[var(--eco-ink-500)]">
-          Select a test account below to automatically fill credentials:
-        </p>
+          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+            {DEMO_ACCOUNTS.map((account) => {
+              const DemoIcon = account.icon;
+              return (
+                <button
+                  key={account.email}
+                  type="button"
+                  onClick={() => fillDemo(account.email, account.password)}
+                  disabled={pending}
+                  className="group flex min-w-0 items-start gap-3 rounded-xl border border-[#e1e9df] bg-white p-3 text-left transition hover:-translate-y-0.5 hover:border-[#83aa8b] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2d7048] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#edf5eb] text-[#286342] transition group-hover:bg-[#286342] group-hover:text-white">
+                    <DemoIcon size={17} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-extrabold capitalize text-[#23362a]">{account.label}</span>
+                      <IconArrowRight size={13} className="shrink-0 text-[#8a9a8c] transition group-hover:translate-x-0.5 group-hover:text-[#286342]" />
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] text-[#647768]">{account.email}</span>
+                    <span className="mt-1 block text-[10px] leading-relaxed text-[#859187]">{account.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => fillDemo("customer@gmail.com", "password123")}
-            className="group relative flex flex-col items-start p-2.5 rounded-lg border border-[var(--color-border)] bg-white hover:border-[var(--color-primary)] hover:shadow-md transition-all duration-200 cursor-pointer text-left"
-          >
-            <div className="flex items-center justify-between w-full mb-1">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-foreground)] group-hover:text-[var(--color-primary)]">
-                <IconShoppingBag size={14} className="text-[var(--color-primary)]" />
-                Test Customer
-              </span>
-              <IconArrowRight size={12} className="text-[var(--color-muted)] group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)] transition-transform" />
-            </div>
-            <span className="text-[10px] text-[var(--eco-ink-500)]">customer@gmail.com</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => fillDemo("manager@gmail.com", "password123")}
-            className="group relative flex flex-col items-start p-2.5 rounded-lg border border-[var(--color-border)] bg-white hover:border-[var(--color-primary)] hover:shadow-md transition-all duration-200 cursor-pointer text-left"
-          >
-            <div className="flex items-center justify-between w-full mb-1">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-foreground)] group-hover:text-[var(--color-primary)]">
-                <IconChefHat size={14} className="text-[var(--color-primary)]" />
-                Kitchen Manager
-              </span>
-              <IconArrowRight size={12} className="text-[var(--color-muted)] group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)] transition-transform" />
-            </div>
-            <span className="text-[10px] text-[var(--eco-ink-500)]">manager@gmail.com</span>
-          </button>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-xs font-bold text-[var(--eco-ink-700)] mb-1.5"
-          >
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <div className="space-y-2">
+          <label htmlFor="login-email" className="block text-xs font-bold text-[#293b30]">
             Email address
           </label>
           <input
-            id="email"
+            id="login-email"
             name="email"
             type="email"
+            inputMode="email"
             autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
-            className="eco-field text-sm w-full focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all"
+            aria-invalid={Boolean(errorMessage)}
+            aria-describedby={errorMessage ? "login-error" : undefined}
+            className="w-full rounded-xl border border-[#dfe5dc] bg-[#fffefa] px-4 py-3.5 text-sm text-[#24352a] outline-none transition placeholder:text-[#a0aaa0] hover:border-[#bccdbd] focus:border-[#39734d] focus:ring-4 focus:ring-[#39734d]/10"
           />
         </div>
 
-        <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label
-              htmlFor="password"
-              className="block text-xs font-bold text-[var(--eco-ink-700)]"
-            >
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="login-password" className="block text-xs font-bold text-[#293b30]">
               Password
             </label>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/forgot-password"
-                className="text-[11px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:underline"
-              >
-                Forgot?
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline cursor-pointer"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+            <Link
+              href="/forgot-password"
+              className="text-[11px] font-bold text-[#52745c] transition hover:text-[#1d4b31] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39734d] focus-visible:ring-offset-2"
+            >
+              Forgot password?
+            </Link>
           </div>
-          <input
-            id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            className="eco-field text-sm w-full focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all"
-          />
+
+          <div className="relative">
+            <input
+              id="login-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              aria-invalid={Boolean(errorMessage)}
+              aria-describedby={errorMessage ? "login-error" : undefined}
+              className="w-full rounded-xl border border-[#dfe5dc] bg-[#fffefa] px-4 py-3.5 pr-16 text-sm text-[#24352a] outline-none transition placeholder:text-[#a0aaa0] hover:border-[#bccdbd] focus:border-[#39734d] focus:ring-4 focus:ring-[#39734d]/10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-3 my-auto rounded-lg px-2 text-[11px] font-bold text-[#52745c] transition hover:bg-[#edf5eb] hover:text-[#1d4b31] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39734d]"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
         {errorMessage && (
-          <div role="alert" className="eco-status-note text-xs flex items-center gap-2">
-            <IconAlertCircle size={16} className="shrink-0" />
+          <div
+            id="login-error"
+            role="alert"
+            aria-live="polite"
+            className="flex items-start gap-2.5 rounded-xl border border-[#f0d4ce] bg-[#fff5f2] px-3.5 py-3 text-xs leading-relaxed text-[#9a3e32]"
+          >
+            <IconAlertCircle size={16} className="mt-0.5 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -201,18 +246,21 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={pending}
-          className="eco-button eco-button-primary w-full text-sm font-bold cursor-pointer py-2.5 transition-transform active:scale-[0.99]"
+          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d4b31] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_18px_rgba(29,75,49,0.18)] transition hover:-translate-y-0.5 hover:bg-[#286342] hover:shadow-[0_12px_24px_rgba(29,75,49,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39734d] focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
         >
-          {pending ? "Signing in…" : "Sign In to EcoEats"}
+          {pending ? (
+            <>
+              <span className="size-4 animate-spin rounded-full border-2 border-white/35 border-t-white" aria-hidden="true" />
+              Signing you in...
+            </>
+          ) : (
+            <>
+              Sign in to EcoEats
+              <IconArrowRight size={16} className="transition group-hover:translate-x-0.5" />
+            </>
+          )}
         </button>
       </form>
-
-      <div className="text-center text-xs text-[var(--eco-ink-500)] pt-3 border-t border-[var(--color-border)]">
-        Don&apos;t have an account yet?{" "}
-        <Link href="/signup" className="font-bold text-[var(--color-primary)] hover:underline">
-          Create an Account
-        </Link>
-      </div>
     </div>
   );
 }

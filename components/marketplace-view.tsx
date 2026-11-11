@@ -267,7 +267,7 @@ export function MarketplaceView() {
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className="group flex w-full items-center justify-between gap-5 rounded-2xl border border-[#E2E8DE] bg-white/85 p-3.5 text-left shadow-[0_8px_24px_rgba(34,54,39,0.06)] transition hover:-translate-y-0.5 hover:border-[#BBD9C2] hover:shadow-[0_14px_30px_rgba(34,54,39,0.1)] sm:w-auto sm:min-w-[245px]"
+            className="group flex w-full items-center justify-between cursor-pointer gap-5 rounded-2xl border border-[#E2E8DE] bg-white/85 p-3.5 text-left shadow-[0_8px_24px_rgba(34,54,39,0.06)] transition hover:-translate-y-0.5 hover:border-[#BBD9C2] hover:shadow-[0_14px_30px_rgba(34,54,39,0.1)] sm:w-auto sm:min-w-[245px]"
           >
             <span className="flex items-center gap-3">
               <span className="grid size-11 place-items-center rounded-xl bg-[#E1F3E5] text-[#2D804D] transition group-hover:bg-[#D1EBD7]">
@@ -467,7 +467,7 @@ export function MarketplaceView() {
                             type="button"
                             onClick={() => handleAddToCart(listing)}
                             disabled={isOutOfStock}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#1D6038] px-4 py-2.5 text-xs font-bold text-white shadow-[0_5px_12px_rgba(29,96,56,0.16)] transition hover:bg-[#174C2D] hover:shadow-[0_8px_18px_rgba(29,96,56,0.22)] active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-[#A8B5AA] disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A] focus-visible:ring-offset-2"
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#1D6038] px-4 py-2.5 cursor-pointer text-xs font-bold text-white shadow-[0_5px_12px_rgba(29,96,56,0.16)] transition hover:bg-[#174C2D] hover:shadow-[0_8px_18px_rgba(29,96,56,0.22)] active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-[#A8B5AA] disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A] focus-visible:ring-offset-2"
                           >
                             <IconPlus size={14} />
                             Add to cart
@@ -483,7 +483,7 @@ export function MarketplaceView() {
                                 )
                               }
                               aria-label={`Remove one ${listing.title}`}
-                              className="grid size-7 place-items-center rounded-full bg-white text-[#286B41] shadow-sm transition hover:bg-[#DDEFE0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A]"
+                              className="grid size-7 place-items-center cursor-pointer rounded-full bg-white text-[#286B41] shadow-sm transition hover:bg-[#DDEFE0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A]"
                             >
                               <IconMinus size={12} />
                             </button>
@@ -500,7 +500,7 @@ export function MarketplaceView() {
                               }
                               disabled={isAtStockLimit}
                               aria-label={`Add one ${listing.title}`}
-                              className="grid size-7 place-items-center rounded-full bg-[#286B41] text-white shadow-sm transition hover:bg-[#1D6038] disabled:cursor-not-allowed disabled:bg-[#A8B5AA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A]"
+                              className="grid size-7 place-items-center cursor-pointer rounded-full bg-[#286B41] text-white shadow-sm transition hover:bg-[#1D6038] disabled:cursor-not-allowed disabled:bg-[#A8B5AA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A]"
                             >
                               <IconPlus size={12} />
                             </button>
@@ -521,7 +521,7 @@ export function MarketplaceView() {
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="restaurant-switch-title"
-            className="fixed inset-x-4 bottom-5 z-50 mx-auto flex max-w-lg flex-col gap-4 rounded-[24px] border border-[#DDE5DA] bg-[#FBFAF5] p-4 shadow-[0_24px_70px_rgba(20,37,27,0.24)] sm:flex-row sm:items-center sm:justify-between sm:p-5"
+            className="fixed inset-x-4 bottom-5 z-50 mx-auto flex max-w-lg flex-col gap-4 rounded-3xl border border-[#DDE5DA] bg-[#FBFAF5] p-2 shadow-[0_24px_70px_rgba(20,37,27,0.24)] sm:flex-row sm:items-center sm:justify-between sm:p-2"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F7EBD5] text-[#93651F]">
@@ -534,27 +534,20 @@ export function MarketplaceView() {
                 >
                   Switch restaurant?
                 </p>
-                <p className="mt-0.5 text-xs leading-5 text-[#7B887D]">
-                  Your current cart is from{" "}
-                  <span className="font-bold text-[#526456]">
-                    {cart?.restaurant_name}
-                  </span>
-                  . You can only order from one restaurant per cart.
-                </p>
               </div>
             </div>
             <div className="flex shrink-0 items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setPendingListing(null)}
-                className="rounded-full px-4 py-2.5 text-xs font-bold text-[#718074] transition hover:bg-[#EEF2EA] hover:text-[#314536]"
+                className="rounded-full px-4 py-2.5 text-xs font-bold text-[#718074] transition cursor-pointer hover:bg-[#EEF2EA] hover:text-[#314536]"
               >
                 Keep cart
               </button>
               <button
                 type="button"
                 onClick={handleClearAndSwitch}
-                className="rounded-full bg-[#1D6038] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#174C2D]"
+                className="rounded-full bg-[#1D6038] px-4 py-2.5 text-xs font-bold text-white cursor-pointer shadow-sm transition hover:bg-[#174C2D]"
               >
                 Clear & switch
               </button>

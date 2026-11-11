@@ -492,8 +492,8 @@ export default function Home() {
           </div>
         </section>
 
-        <HowEcoEatsWorks/>
-        
+        <HowEcoEatsWorks />
+
         <section
           id="surplus-preview"
           className="relative overflow-hidden bg-[#F8F7F0] py-16 sm:py-20 lg:py-24"

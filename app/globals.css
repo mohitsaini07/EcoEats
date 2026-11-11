@@ -553,42 +553,75 @@ a:focus-visible {
   transform: translateY(0);
 }
 
-.eco-topbar {
-  top: 0;
-  min-height: auto;
-  padding: 0.75rem 0;
-}
-
 .eco-topbar-inner {
   min-height: 4.5rem;
   padding: 0.55rem 0.8rem 0.55rem 1rem;
-  border: 1px solid rgb(255 255 255 / 0.12);
+
+  border: 1px solid #e6e9df;
   border-radius: var(--eco-radius-full);
-  background: var(--eco-ink-950);
-  box-shadow: 0 14px 30px rgb(20 29 23 / 0.18);
+
+  background: #fbfaf4;
+
+  box-shadow: 0 8px 24px rgb(31 61 42 / 0.07);
 }
 
+/* Brand */
 .eco-brand {
-  color: #fff;
+  color: #173d2a;
 }
+
 .eco-brand-mark {
   width: 2rem;
   height: 2rem;
   border-radius: 0.7rem 0.7rem 0.7rem 0.22rem;
+  background: #267447;
+  color: #267447;
 }
+
+/* Navigation */
 .eco-nav {
   gap: 0.35rem;
 }
+
 .eco-nav-links {
   display: flex;
   align-items: center;
   gap: 0.2rem;
 }
+
 .eco-nav-link {
   min-height: 2.8rem;
   border-radius: var(--eco-radius-full);
-  color: rgb(255 255 255 / 0.82);
   padding-inline: 1rem;
+
+  color: #526257;
+  transition: all 200ms ease;
+}
+
+.eco-nav-link:hover {
+  background: #edf4eb;
+  color: #246b40;
+}
+
+/* Active navigation link */
+.eco-nav-link[aria-current="page"],
+.eco-nav-link.active {
+  background: #e5f1e5;
+  color: #246b40;
+  font-weight: 700;
+}
+
+/* Primary CTA */
+.eco-nav-cta {
+  background: #287a46;
+  color: #ffffff;
+  border-radius: var(--eco-radius-full);
+  transition: all 200ms ease;
+}
+
+.eco-nav-cta:hover {
+  background: #1d6338;
+  box-shadow: 0 5px 14px rgb(40 122 70 / 0.15);
 }
 .eco-nav-slide {
   position: relative;

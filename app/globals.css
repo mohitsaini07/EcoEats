@@ -1042,9 +1042,10 @@ a:focus-visible {
 }
 
 /* Trust / Who We Are Section (Design Match) */
-.eco-trust-section {
+.eco-about-section {
   padding: clamp(3rem, 6vw, 5.5rem) 0;
   background: var(--color-background);
+  scroll-margin-top: 5.5rem;
 }
 
 .eco-trust-card {
@@ -1804,6 +1805,188 @@ a:focus-visible {
     padding: 1.25rem 0;
   }
 }
+
+/* ==========================================================================
+   EcoEats Core Motion System
+   Hardware-accelerated CSS animations with smooth biophilic easing curves
+   ========================================================================== */
+
+:root {
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 250ms;
+  --motion-duration-smooth: 450ms;
+  --motion-duration-deliberate: 700ms;
+}
+
+@keyframes motionFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motionFadeUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motionHeroPhoneFadeUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, calc(-50% + 24px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes motionFadeDown {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motionScaleIn {
+  from {
+    opacity: 0;
+    transform: scale3d(0.95, 0.95, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes motionSlideInRight {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motionSlideInLeft {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motionModalEnter {
+  from {
+    opacity: 0;
+    transform: scale3d(0.96, 0.96, 1) translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motionPulseGentle {
+  0%, 100% {
+    transform: scale3d(1, 1, 1);
+  }
+  50% {
+    transform: scale3d(1.04, 1.04, 1);
+  }
+}
+
+.motion-fade-in {
+  animation: motionFadeIn var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: opacity;
+}
+
+.motion-fade-up {
+  animation: motionFadeUp var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: transform, opacity;
+}
+
+.motion-hero-phone {
+  animation: motionHeroPhoneFadeUp var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: transform, opacity;
+}
+
+.motion-fade-down {
+  animation: motionFadeDown var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: transform, opacity;
+}
+
+.motion-scale-in {
+  animation: motionScaleIn var(--motion-duration-normal) var(--motion-ease-spring) both;
+  will-change: transform, opacity;
+}
+
+.motion-slide-in-right {
+  animation: motionSlideInRight var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: transform;
+}
+
+.motion-slide-in-left {
+  animation: motionSlideInLeft var(--motion-duration-smooth) var(--motion-ease-out) both;
+  will-change: transform;
+}
+
+.motion-modal-enter {
+  animation: motionModalEnter var(--motion-duration-normal) var(--motion-ease-spring) both;
+  will-change: transform, opacity;
+}
+
+.motion-pulse-gentle {
+  animation: motionPulseGentle 2.4s ease-in-out infinite;
+}
+
+/* Stagger delay utilities */
+.motion-delay-75  { animation-delay: 75ms; }
+.motion-delay-150 { animation-delay: 150ms; }
+.motion-delay-225 { animation-delay: 225ms; }
+.motion-delay-300 { animation-delay: 300ms; }
+.motion-delay-400 { animation-delay: 400ms; }
+.motion-delay-500 { animation-delay: 500ms; }
+.motion-delay-600 { animation-delay: 600ms; }
+
+/* Micro-interaction interactive styles */
+.motion-interactive-card {
+  transition: transform var(--motion-duration-normal) var(--motion-ease-out),
+              box-shadow var(--motion-duration-normal) var(--motion-ease-out),
+              border-color var(--motion-duration-fast) ease;
+  will-change: transform;
+}
+
+.motion-interactive-card:hover {
+  transform: translate3d(0, -4px, 0);
+}
+
+.motion-interactive-pill {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-spring),
+              background-color var(--motion-duration-fast) ease,
+              color var(--motion-duration-fast) ease;
+}
+
+.motion-interactive-pill:active {
+  transform: scale3d(0.96, 0.96, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1812,5 +1995,22 @@ a:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .motion-fade-in,
+  .motion-fade-up,
+  .motion-hero-phone,
+  .motion-fade-down,
+  .motion-scale-in,
+  .motion-slide-in-right,
+  .motion-slide-in-left,
+  .motion-modal-enter,
+  .motion-pulse-gentle,
+  .motion-interactive-card {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
   }
 }

@@ -11,6 +11,7 @@ import {
 } from "@/components/icons";
 import { SAMPLE_LISTINGS } from "@/lib/data/sample-listings";
 import { HowEcoEatsWorks } from "@/components/how-it-works";
+import { Reveal, Stagger } from "@/components/motion";
 
 export default function Home() {
   return (
@@ -20,10 +21,12 @@ export default function Home() {
         <section id="home" className="eco-hero">
           <div className="eco-hero-grid">
             <div className="eco-hero-copy">
-              <p className="eco-eyebrow eco-eyebrow-light">
-                <IconLeaf size={14} /> Everyday food, rescued locally
-              </p>
-              <h1 className="eco-hero-title">
+              <div className="motion-fade-up">
+                <p className="eco-eyebrow eco-eyebrow-light">
+                  <IconLeaf size={14} /> Everyday food, rescued locally
+                </p>
+              </div>
+              <h1 className="eco-hero-title motion-fade-up motion-delay-150">
                 <span className="eco-trust-dark">Good food.</span>
                 <br />
                 <span className="eco-trust-light">Better price.</span>
@@ -31,22 +34,22 @@ export default function Home() {
                 <span className="eco-trust-dark">Less </span>
                 <span className="eco-hero-accent"> waste.</span>
               </h1>
-              <p className="eco-hero-description">
+              <p className="eco-hero-description motion-fade-up motion-delay-225">
                 Find beautifully made surplus food from local kitchens, save up
                 to 70%, and give every meal the ending it deserves.
               </p>
-              <div className="eco-hero-actions">
-                <Link href="/signup" className="eco-button eco-button-hero">
+              <div className="eco-hero-actions motion-fade-up motion-delay-300">
+                <Link href="/signup" className="eco-button eco-button-hero motion-interactive-pill">
                   Find food nearby <IconArrowRight size={18} />
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="eco-button eco-button-hero-quiet"
+                  className="eco-button eco-button-hero-quiet motion-interactive-pill"
                 >
                   See how it works
                 </a>
               </div>
-              <div className="eco-hero-benefits" aria-label="EcoEats benefits">
+              <div className="eco-hero-benefits motion-fade-up motion-delay-400" aria-label="EcoEats benefits">
                 <span>
                   <IconShoppingBag size={17} /> Easy pickup
                 </span>
@@ -57,10 +60,10 @@ export default function Home() {
             </div>
 
             <div
-              className="eco-hero-art"
+              className="eco-hero-art motion-fade-in motion-delay-225"
               aria-label="EcoEats mobile food discovery preview"
             >
-              <div className="eco-hero-orbit" aria-hidden="true" />
+              <div className="eco-hero-orbit motion-pulse-gentle" aria-hidden="true" />
               <Image
                 src="/images/hero-surplus-bowl.png"
                 alt="bowl"
@@ -68,7 +71,7 @@ export default function Home() {
                 priority
                 className="eco-hero-bowl"
               />
-              <div className="eco-phone">
+              <div className="eco-phone motion-hero-phone motion-delay-400">
                 <Image
                   src="/images/phone-mockup.png"
                   alt=""
@@ -80,9 +83,10 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section id="about" className="eco-trust-section">
+
+        <section id="about" className="eco-about-section">
           <div className="eco-container">
-            <div className="eco-trust-card">
+            <Reveal variant="fadeUp" className="eco-trust-card">
               <div className="eco-trust-grid">
                 {/* Left Column: Mobile App Preview Mockup */}
                 <div className="eco-trust-mockup-wrapper">
@@ -403,7 +407,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right Column: Copy, CTA & Stats */}
+                {/*   Right Column: Copy, CTA & Stats */}
                 <div className="eco-trust-content">
                   <h2 className="eco-trust-heading">
                     <span className="eco-trust-light">Discover </span>
@@ -488,7 +492,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -509,7 +513,7 @@ export default function Home() {
           />
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+            <Reveal variant="fadeUp" className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D5E4D5] bg-white/75 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#285B3B] shadow-sm">
                   <span className="size-1.5 rounded-full bg-[#4E8B5C]" />
@@ -527,7 +531,7 @@ export default function Home() {
 
               <Link
                 href="/marketplace"
-                className="group inline-flex w-fit items-center gap-2 rounded-full border border-[#C9D9CA] bg-white/80 px-5 py-3 text-sm font-bold text-[#245537] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#285B3B] hover:bg-[#285B3B] hover:text-white hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6D9B76]/25"
+                className="group inline-flex w-fit items-center gap-2 rounded-full border border-[#C9D9CA] bg-white/80 px-5 py-3 text-sm font-bold text-[#245537] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#285B3B] hover:bg-[#285B3B] hover:text-white hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6D9B76]/25 motion-interactive-pill"
               >
                 Browse marketplace
                 <IconArrowRight
@@ -535,7 +539,7 @@ export default function Home() {
                   className="transition-transform duration-200 group-hover:translate-x-1"
                 />
               </Link>
-            </div>
+            </Reveal>
 
             {SAMPLE_LISTINGS.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-[#C9D9CA] bg-white/70 px-6 py-12 text-center">
@@ -547,7 +551,7 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              <Stagger staggerMs={100} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                 {SAMPLE_LISTINGS.map((listing) => {
                   const discountPercent =
                     listing.original_price > 0
@@ -561,7 +565,7 @@ export default function Home() {
                   return (
                     <article
                       key={listing.id}
-                      className="group overflow-hidden rounded-[1.6rem] border border-[#E4E6DC] bg-white shadow-[0_8px_30px_rgba(28,61,39,0.055)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#C7D8C8] hover:shadow-[0_18px_45px_rgba(28,61,39,0.12)]"
+                      className="group overflow-hidden rounded-[1.6rem] border border-[#E4E6DC] bg-white shadow-[0_8px_30px_rgba(28,61,39,0.055)] motion-interactive-card"
                     >
                       <Link
                         href="/marketplace"
@@ -657,7 +661,7 @@ export default function Home() {
                     </article>
                   );
                 })}
-              </div>
+              </Stagger>
             )}
 
             <p className="mt-6 text-center text-[11px] font-medium text-[#879287]">
@@ -668,16 +672,16 @@ export default function Home() {
         </section>
 
         <section className="eco-impact-strip">
-          <div className="eco-container">
+          <Reveal variant="fadeUp" className="eco-container flex items-center justify-between">
             <IconCheckCircle size={22} />
             <p>
               <strong>Every rescue counts.</strong> Great food stays on the
               table, and local makers are paid for their craft.
             </p>
-            <Link href="/signup">
+            <Link href="/signup" className="motion-interactive-pill">
               Join EcoEats <IconArrowRight size={16} />
             </Link>
-          </div>
+          </Reveal>
         </section>
       </main>
       <footer className="eco-footer">

@@ -8,6 +8,7 @@ import {
   IconSearch,
   IconShoppingBag,
 } from "@/components/icons";
+import { Reveal, Stagger } from "@/components/motion";
 
 export function HowEcoEatsWorks() {
   return (
@@ -28,7 +29,7 @@ export function HowEcoEatsWorks() {
 
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         {/* Section heading */}
-        <div className="mx-auto max-w-3xl text-center">
+        <Reveal variant="fadeUp" className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#CFE7D5] bg-[#E8F5EB] px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#236B40] shadow-sm">
             <IconLeaf size={14} /> A better way to enjoy good food
           </span>
@@ -48,7 +49,7 @@ export function HowEcoEatsWorks() {
             deal, reserve it when you check out, and collect it directly from
             the kitchen.
           </p>
-        </div>
+        </Reveal>
 
         {/* Steps */}
         <div className="relative mt-14 lg:mt-16">
@@ -58,7 +59,7 @@ export function HowEcoEatsWorks() {
             className="absolute left-[18%] right-[18%] top-[4.1rem] hidden border-t-2 border-dashed border-[#C9DDCC] lg:block"
           />
 
-          <div className="grid gap-5 md:grid-cols-3 md:gap-6">
+          <Stagger staggerMs={120} className="grid gap-5 md:grid-cols-3 md:gap-6">
             {/* Step 1 */}
             <article className="group relative rounded-[1.75rem] border border-[#E5E8DE] bg-white p-5 shadow-[0_12px_35px_rgba(29,55,37,0.055)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(29,55,37,0.10)] sm:p-6">
               <div className="flex items-center justify-between">
@@ -103,7 +104,7 @@ export function HowEcoEatsWorks() {
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-[#EEF0E9] pt-2.5">
                     <span className="text-[11px] font-semibold text-[#758078]">
-                      Explore today's deals
+                      Explore today&apos;s deals
                     </span>
                     <IconArrowRight size={15} className="text-[#2D804D]" />
                   </div>
@@ -221,11 +222,11 @@ export function HowEcoEatsWorks() {
                 </p>
               </div>
             </article>
-          </div>
+          </Stagger>
         </div>
 
         {/* Closing CTA */}
-        <div className="mt-9 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] border border-[#DDE8D9] bg-[#EDF5E9] px-6 py-6 text-center sm:flex-row sm:px-8 sm:text-left">
+        <Reveal variant="fadeUp" delayMs={200} className="mt-9 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] border border-[#DDE8D9] bg-[#EDF5E9] px-6 py-6 text-center sm:flex-row sm:px-8 sm:text-left">
           <div className="flex items-center gap-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#1D6038] text-white shadow-sm">
               <IconLeaf size={20} />
@@ -241,11 +242,11 @@ export function HowEcoEatsWorks() {
           </div>
           <Link
             href="/marketplace"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#246F42] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(36,111,66,0.2)] transition hover:-translate-y-0.5 hover:bg-[#1D6038] hover:shadow-[0_12px_24px_rgba(36,111,66,0.25)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2D804D]/20 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#246F42] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(36,111,66,0.2)] transition hover:-translate-y-0.5 hover:bg-[#1D6038] hover:shadow-[0_12px_24px_rgba(36,111,66,0.25)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2D804D]/20 sm:w-auto motion-interactive-pill"
           >
             Explore nearby food <IconArrowRight size={16} />
           </Link>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

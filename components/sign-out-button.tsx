@@ -40,7 +40,7 @@ export function SignOutButton({
       aria-label="Sign out of EcoEats"
     >
       <IconLogOut size={15} />
-      <span>{pending ? "Signing out…" : "Sign out"}</span>
+      <span className="text-black">{pending ? "Signing out…" : "Sign out"}</span>
     </button>
   );
 }

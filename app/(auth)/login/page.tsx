@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
-import { IconLeaf, IconMapPin, IconShoppingBag } from "@/components/icons";
+import { IconLeaf, IconMapPin, IconShoppingBag, IconArrowRight } from "@/components/icons";
+import { SignOutButton } from "@/components/sign-out-button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { LoginForm } from "./login-form";
 
@@ -15,9 +15,7 @@ export const metadata = {
 };
 
 export default async function LoginPage() {
-  if (await getCurrentUser()) {
-    redirect("/app");
-  }
+  const currentUser = await getCurrentUser();
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#FBFAF4] text-[#17251D]">
@@ -140,6 +138,35 @@ export default async function LoginPage() {
                 just around the corner.
               </p>
             </div>
+
+            {currentUser && (
+              <div className="mb-6 rounded-2xl border border-[#C6E2CD] bg-[#EAF5EC] p-4 text-[#1C3D29] shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#183B28] px-2.5 py-1 text-[11px] font-extrabold text-white">
+                    <span className="size-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+                    Already logged in
+                  </span>
+                  <SignOutButton />
+                </div>
+                <p className="mt-2 text-xs text-[#526D59]">
+                  Signed in as <strong className="text-[#183B28]">{currentUser.name}</strong> ({currentUser.email})
+                </p>
+                <div className="mt-3">
+                  <Link
+                    href={currentUser.role === "RESTAURANT_MANAGER" ? "/manager" : "/marketplace"}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#28633B] py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#1D4A2C]"
+                  >
+                    <span>Go to {currentUser.role === "RESTAURANT_MANAGER" ? "Manager Hub" : "Marketplace"}</span>
+                    <IconArrowRight size={14} />
+                  </Link>
+                </div>
+                <div className="mt-2 text-center">
+                  <p className="text-[11px] text-[#6E8174]">
+                    Or switch accounts using the form below:
+                  </p>
+                </div>
+              </div>
+            )}
 
             <Suspense
               fallback={

@@ -11,12 +11,20 @@ import {
 } from "@/components/icons";
 import { SAMPLE_LISTINGS } from "@/lib/data/sample-listings";
 import { HowEcoEatsWorks } from "@/components/how-it-works";
-import { Reveal, Stagger } from "@/components/motion";
+import { getActiveFoodListings } from "@/lib/db/listings";
+import { getCurrentUser } from "@/lib/auth/session";
+import { Footer } from "@/components/footer";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const user = await getCurrentUser();
+  const dbListings = await getActiveFoodListings().catch(() => []);
+  const listings = dbListings.length > 0 ? dbListings : SAMPLE_LISTINGS;
+
   return (
     <div className="eco-page">
-      <LandingNav />
+      <LandingNav user={user} />
       <main id="main-content">
         <section id="home" className="eco-hero">
           <div className="eco-hero-grid">
@@ -39,17 +47,51 @@ export default function Home() {
                 to 70%, and give every meal the ending it deserves.
               </p>
               <div className="eco-hero-actions motion-fade-up motion-delay-300">
-                <Link href="/signup" className="eco-button eco-button-hero motion-interactive-pill">
-                  Find food nearby <IconArrowRight size={18} />
-                </Link>
-                <a
-                  href="#how-it-works"
-                  className="eco-button eco-button-hero-quiet motion-interactive-pill"
-                >
-                  See how it works
-                </a>
+                {user ? (
+                  <>
+                    <Link
+                      href={
+                        user.role === "RESTAURANT_MANAGER"
+                          ? "/manager"
+                          : "/marketplace"
+                      }
+                      className="eco-button eco-button-hero motion-interactive-pill"
+                    >
+                      Go to{" "}
+                      {user.role === "RESTAURANT_MANAGER"
+                        ? "Manager Hub"
+                        : "Marketplace"}{" "}
+                      <IconArrowRight size={18} />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="eco-button eco-button-hero-quiet motion-interactive-pill inline-flex items-center gap-2"
+                    >
+                      <span className="size-2 rounded-full bg-[#4ADE80] animate-pulse" />
+                      <span>Already logged in</span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="eco-button eco-button-hero motion-interactive-pill"
+                    >
+                      Find food nearby <IconArrowRight size={18} />
+                    </Link>
+                    <a
+                      href="#how-it-works"
+                      className="eco-button eco-button-hero-quiet motion-interactive-pill"
+                    >
+                      See how it works
+                    </a>
+                  </>
+                )}
               </div>
-              <div className="eco-hero-benefits motion-fade-up motion-delay-400" aria-label="EcoEats benefits">
+              <div
+                className="eco-hero-benefits motion-fade-up motion-delay-400"
+                aria-label="EcoEats benefits"
+              >
                 <span>
                   <IconShoppingBag size={17} /> Easy pickup
                 </span>
@@ -63,7 +105,10 @@ export default function Home() {
               className="eco-hero-art motion-fade-in motion-delay-225"
               aria-label="EcoEats mobile food discovery preview"
             >
-              <div className="eco-hero-orbit motion-pulse-gentle" aria-hidden="true" />
+              <div
+                className="eco-hero-orbit motion-pulse-gentle"
+                aria-hidden="true"
+              />
               <Image
                 src="/images/hero-surplus-bowl.png"
                 alt="bowl"
@@ -71,7 +116,7 @@ export default function Home() {
                 priority
                 className="eco-hero-bowl"
               />
-              <div className="eco-phone motion-hero-phone motion-delay-400">
+              <div className="eco-phone motion-hero-phone motion-delay-225">
                 <Image
                   src="/images/phone-mockup.png"
                   alt=""
@@ -86,7 +131,7 @@ export default function Home() {
 
         <section id="about" className="eco-about-section">
           <div className="eco-container">
-            <Reveal variant="fadeUp" className="eco-trust-card">
+            <div className="eco-trust-card">
               <div className="eco-trust-grid">
                 {/* Left Column: Mobile App Preview Mockup */}
                 <div className="eco-trust-mockup-wrapper">
@@ -407,7 +452,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/*   Right Column: Copy, CTA & Stats */}
+                {/*   About section */}
                 <div className="eco-trust-content">
                   <h2 className="eco-trust-heading">
                     <span className="eco-trust-light">Discover </span>
@@ -492,7 +537,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </Reveal>
+            </div>
           </div>
         </section>
 
@@ -513,7 +558,7 @@ export default function Home() {
           />
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal variant="fadeUp" className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D5E4D5] bg-white/75 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#285B3B] shadow-sm">
                   <span className="size-1.5 rounded-full bg-[#4E8B5C]" />
@@ -539,9 +584,9 @@ export default function Home() {
                   className="transition-transform duration-200 group-hover:translate-x-1"
                 />
               </Link>
-            </Reveal>
+            </div>
 
-            {SAMPLE_LISTINGS.length === 0 ? (
+            {listings.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-[#C9D9CA] bg-white/70 px-6 py-12 text-center">
                 <p className="text-base font-bold text-[#183B29]">
                   Fresh finds are on their way.
@@ -551,8 +596,8 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <Stagger staggerMs={100} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                {SAMPLE_LISTINGS.map((listing) => {
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                {listings.map((listing) => {
                   const discountPercent =
                     listing.original_price > 0
                       ? Math.round(
@@ -661,7 +706,7 @@ export default function Home() {
                     </article>
                   );
                 })}
-              </Stagger>
+              </div>
             )}
 
             <p className="mt-6 text-center text-[11px] font-medium text-[#879287]">
@@ -670,26 +715,9 @@ export default function Home() {
             </p>
           </div>
         </section>
-
-        <section className="eco-impact-strip">
-          <Reveal variant="fadeUp" className="eco-container flex items-center justify-between">
-            <IconCheckCircle size={22} />
-            <p>
-              <strong>Every rescue counts.</strong> Great food stays on the
-              table, and local makers are paid for their craft.
-            </p>
-            <Link href="/signup" className="motion-interactive-pill">
-              Join EcoEats <IconArrowRight size={16} />
-            </Link>
-          </Reveal>
-        </section>
       </main>
-      <footer className="eco-footer">
-        <div className="eco-container">
-          <p>© 2026 EcoEats · Hyperlocal surplus-food marketplace</p>
-          <Link href="/login">Restaurant sign in</Link>
-        </div>
-      </footer>
+
+     <Footer/>
     </div>
   );
 }

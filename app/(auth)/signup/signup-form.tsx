@@ -235,17 +235,10 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={pending}
-        className="eco-button eco-button-primary w-full text-sm font-bold cursor-pointer"
+        className="eco-button eco-button-primary w-full text-sm font-bold rounded-xl cursor-pointer"
       >
         {pending ? "Creating Account…" : "Create EcoEats Account"}
       </button>
-
-      <div className="text-center text-xs text-[var(--eco-ink-500)] pt-2">
-        Already have an account?{" "}
-        <Link href="/login" className="font-bold text-[var(--color-primary)] hover:underline">
-          Sign In
-        </Link>
-      </div>
     </form>
   );
 }

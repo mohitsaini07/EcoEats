@@ -26,7 +26,7 @@ export function ListingCard({
   const isLowStock = listing.available_quantity > 0 && listing.available_quantity <= 3;
 
   return (
-    <article className="eco-panel eco-panel-interactive flex flex-col justify-between overflow-hidden bg-white">
+    <article className="eco-panel eco-panel-interactive flex flex-col justify-between overflow-hidden bg-white motion-interactive-card">
       <div>
         {/* Card Header & Scenery */}
         <div className="relative p-5 pb-3 border-b border-[var(--color-border)] bg-[var(--eco-canvas-100)]">

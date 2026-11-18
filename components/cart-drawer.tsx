@@ -80,14 +80,14 @@ export function CartDrawer({
         type="button"
         onClick={onClose}
         aria-label="Close shopping cart"
-        className="absolute inset-0 cursor-default bg-[#10251a]/45 backdrop-blur-[3px] animate-in fade-in duration-200"
+        className="absolute inset-0 cursor-default bg-[#10251a]/45 backdrop-blur-[3px] motion-fade-in"
       />
 
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
-        className="absolute inset-y-0 right-0 flex w-full max-w-[500px] flex-col overflow-hidden border-l border-[#e4e9df] bg-[#fbfaf4] shadow-[-24px_0_70px_rgba(18,42,28,0.2)] animate-in slide-in-from-right duration-300"
+        className="absolute inset-y-0 right-0 flex w-full max-w-[500px] flex-col overflow-hidden border-l border-[#e4e9df] bg-[#fbfaf4] shadow-[-24px_0_70px_rgba(18,42,28,0.2)] motion-slide-in-right"
       >
         {/* Header */}
         <header className="relative shrink-0 overflow-hidden bg-[#173d2a] px-5 pb-5 pt-6 text-white sm:px-7">

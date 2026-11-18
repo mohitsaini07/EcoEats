@@ -67,11 +67,11 @@ export function CheckoutModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs motion-fade-in"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between">
+      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between motion-modal-enter">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">

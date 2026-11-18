@@ -11,8 +11,8 @@ export function AppHeader({ user }: { user: CurrentUser }) {
     <header className="eco-topbar" role="banner">
       <div className="eco-container eco-topbar-inner">
         <div className="flex items-center gap-6">
-          <Brand href={isManager ? "/manager" : "/marketplace"} />
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15">
+          <Brand href="/" />
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-black border border-white/15">
             {isManager ? (
               <>
                 <IconChefHat size={14} className="text-(--color-primary)" />
@@ -53,10 +53,10 @@ export function AppHeader({ user }: { user: CurrentUser }) {
 
           <div className="flex items-center gap-3 pl-3 border-l border-(--color-border) ml-2">
             <div className="hidden md:flex flex-col text-right">
-              <span className="text-sm font-semibold text-white leading-tight">
+              <span className="text-sm font-semibold text-black leading-tight">
                 {user.name}
               </span>
-              <span className="text-xs text-white/60 leading-tight">
+              <span className="text-xs text-black/70 leading-tight">
                 {user.email}
               </span>
             </div>

@@ -20,8 +20,8 @@ export function Reveal<T extends ElementType = "div">({
   variant = "fadeUp",
   delayMs = 0,
   durationMs,
-  threshold = 0.05,
-  rootMargin = "0px 0px -20px 0px",
+  threshold = 0,
+  rootMargin = "0px 0px 150px 0px",
   triggerOnce = true,
   className = "",
   children,
@@ -29,7 +29,7 @@ export function Reveal<T extends ElementType = "div">({
 }: RevealProps<T> & Omit<ComponentPropsWithoutRef<T>, keyof RevealProps<T>>) {
   const Component = as || "div";
   const ref = useRef<HTMLElement | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     // If IntersectionObserver is not available or reduced motion is preferred, reveal immediately
@@ -46,6 +46,14 @@ export function Reveal<T extends ElementType = "div">({
 
     const node = ref.current;
     if (!node) return;
+
+    // Check if element is already within viewport on mount (e.g. above fold, near top, or anchor navigated)
+    const rect = node.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.top <= windowHeight + 150) {
+      setIsVisible(true);
+      if (triggerOnce) return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {

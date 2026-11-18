@@ -9,16 +9,8 @@ import {
   IconX,
 } from "@/components/icons";
 import type { FoodListing } from "@/lib/types/marketplace";
-
-type PickupQueueItem = {
-  order_id: string;
-  customer_name: string;
-  pickup_code: string;
-  items_summary: string;
-  total_amount: number;
-  pickup_window: string;
-  status: "READY_FOR_PICKUP" | "COMPLETED";
-};
+import { createBatchListingAction } from "@/app/manager/actions";
+import type { PickupQueueItem } from "@/lib/db/listings";
 
 const INITIAL_QUEUE: PickupQueueItem[] = [
   {
@@ -86,15 +78,42 @@ const categories = ["Bakery", "Meals", "Cafe", "Dessert", "Vegan"] as const;
 
 type Category = (typeof categories)[number];
 
-export function ManagerView() {
-  const [listings, setListings] = useState<FoodListing[]>(INITIAL_MANAGER_LISTINGS);
-  const [queue, setQueue] = useState<PickupQueueItem[]>(INITIAL_QUEUE);
+interface ManagerViewProps {
+  initialRestaurant?: {
+    id: string;
+    name: string;
+    address: string;
+  };
+  initialListings?: FoodListing[];
+  initialQueue?: PickupQueueItem[];
+}
+
+export function ManagerView({
+  initialRestaurant,
+  initialListings,
+  initialQueue,
+}: ManagerViewProps = {}) {
+  const [restaurant] = useState(
+    initialRestaurant || {
+      id: "rest-001",
+      name: "The Artisan Oven & Cafe",
+      address: "Indiranagar Branch",
+    }
+  );
+  const [listings, setListings] = useState<FoodListing[]>(
+    initialListings && initialListings.length > 0 ? initialListings : INITIAL_MANAGER_LISTINGS
+  );
+  const [queue, setQueue] = useState<PickupQueueItem[]>(
+    initialQueue && initialQueue.length > 0 ? initialQueue : INITIAL_QUEUE
+  );
+
   const [codeInput, setCodeInput] = useState("");
   const [verifyMessage, setVerifyMessage] = useState<{
     text: string;
     success: boolean;
   } | null>(null);
   const [isNewListingOpen, setIsNewListingOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [listingError, setListingError] = useState<string | null>(null);
   const [queueFilter, setQueueFilter] = useState<"ALL" | "READY_FOR_PICKUP" | "COMPLETED">("ALL");
 
@@ -175,7 +194,7 @@ export function ManagerView() {
     setListingError(null);
   }
 
-  function handleCreateListing(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateListing(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setListingError(null);
 
@@ -200,29 +219,33 @@ export function ManagerView() {
       return;
     }
 
-    const created: FoodListing = {
-      id: `fl-${Date.now().toString().slice(-6)}`,
-      restaurant_id: "rest-001",
-      restaurant_name: "Test Cafe & Artisan Bakery",
-      restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
-      distance_km: 0.4,
-      title: newTitle.trim(),
-      description:
-        newDescription.trim() || "Fresh surplus batch prepared by our kitchen staff today.",
-      category: newCategory,
-      quantity,
-      available_quantity: quantity,
-      original_price: originalPrice,
-      discounted_price: discountedPrice,
-      pickup_start: newPickupStart.trim(),
-      pickup_end: newPickupEnd.trim(),
-      status: "ACTIVE",
-      dietary_tags: ["Fresh Batch", "Packaged for Pickup"],
-    };
+    setIsSaving(true);
+    try {
+      const res = await createBatchListingAction({
+        title: newTitle.trim(),
+        category: newCategory,
+        quantity,
+        originalPrice,
+        discountedPrice,
+        pickupStart: newPickupStart.trim(),
+        pickupEnd: newPickupEnd.trim(),
+        description: newDescription.trim(),
+      });
 
-    setListings((previous) => [created, ...previous]);
-    setIsNewListingOpen(false);
-    resetListingForm();
+      if (!res.success) {
+        setListingError(res.error);
+        setIsSaving(false);
+        return;
+      }
+
+      setListings((previous) => [res.data, ...previous]);
+      setIsNewListingOpen(false);
+      resetListingForm();
+    } catch (err) {
+      setListingError(err instanceof Error ? err.message : "Failed to publish surplus batch.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -233,9 +256,9 @@ export function ManagerView() {
           <div className="max-w-2xl">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-[#D8E8D9] bg-[#EDF5EC] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#285D3B]">
-                <IconChefHat size={14} /> The Artisan Oven & Cafe
+                <IconChefHat size={14} /> {restaurant.name}
               </span>
-              <span className="text-xs font-medium text-[#788279]">Indiranagar Branch</span>
+              <span className="text-xs font-medium text-[#788279]">{restaurant.address}</span>
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#568064]">Kitchen operations</p>
             <h1 className="mt-2 text-3xl font-black tracking-[-0.045em] text-[#193B28] sm:text-4xl">
@@ -563,9 +586,23 @@ export function ManagerView() {
               )}
 
               <div className="flex flex-col-reverse gap-2 border-t border-[#E6EAE1] pt-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => { setIsNewListingOpen(false); setListingError(null); }} className="min-h-11 rounded-full border border-[#D8E1D6] bg-white px-5 text-sm font-bold text-[#5C6B5E] transition hover:bg-[#F4F6F0]">Cancel</button>
-                <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#1D4A30] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(29,74,48,0.16)] transition hover:bg-[#173C27]">
-                  <IconPlus size={16} /> Publish batch
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setIsNewListingOpen(false);
+                    setListingError(null);
+                  }}
+                  className="min-h-11 rounded-full border border-[#D8E1D6] bg-white px-5 text-sm font-bold text-[#5C6B5E] transition hover:bg-[#F4F6F0] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#1D4A30] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(29,74,48,0.16)] transition hover:bg-[#173C27] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <IconPlus size={16} /> {isSaving ? "Publishing batch..." : "Publish batch"}
                 </button>
               </div>
             </form>

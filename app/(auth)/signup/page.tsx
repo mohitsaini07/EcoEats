@@ -15,7 +15,7 @@ export const metadata = {
 
 export default async function SignupPage() {
   if (await getCurrentUser()) {
-    redirect("/app");
+    redirect("/login");
   }
 
   return (

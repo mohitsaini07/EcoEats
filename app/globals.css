@@ -335,13 +335,12 @@ a:focus-visible {
 
 .eco-button-ghost {
   background: transparent;
-  color: white;
-  border: 1px solid transparent;
+  color: black;
 }
 
 .eco-button-ghost:hover:not(:disabled) {
-  background: var(--color-surface-subtle);
-  color: var(--color-foreground);
+  background: #edf4eb;
+  color: #246b40;
 }
 
 .eco-button-danger {
@@ -593,7 +592,6 @@ a:focus-visible {
   min-height: 2.8rem;
   border-radius: var(--eco-radius-full);
   padding-inline: 1rem;
-
   color: #526257;
   transition: all 200ms ease;
 }
@@ -1671,51 +1669,6 @@ a:focus-visible {
   font-weight: 800;
   text-decoration: none;
 }
-.eco-impact-strip {
-  background: var(--eco-leaf-600);
-  color: #fff;
-}
-.eco-impact-strip > div {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  min-height: 6.5rem;
-}
-.eco-impact-strip p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-.eco-impact-strip a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.eco-footer {
-  background: var(--eco-ink-950);
-  color: rgb(255 255 255 / 0.56);
-  font-size: 0.75rem;
-}
-.eco-footer > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  min-height: 5rem;
-}
-.eco-footer p {
-  margin: 0;
-}
-.eco-footer a {
-  color: #fff;
-  font-weight: 700;
-  text-decoration: none;
-}
 
 @media (max-width: 63.99rem) {
   .eco-hero-grid {
@@ -1785,24 +1738,6 @@ a:focus-visible {
   .eco-section-heading-row {
     align-items: flex-start;
     flex-direction: column;
-  }
-  .eco-impact-strip > div {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    padding: 1.5rem 0;
-  }
-  .eco-impact-strip p {
-    flex: 1 1 75%;
-  }
-  .eco-impact-strip a {
-    margin-left: 0;
-    padding-left: 1.9rem;
-  }
-  .eco-footer > div {
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: center;
-    padding: 1.25rem 0;
   }
 }
 
@@ -1975,16 +1910,6 @@ a:focus-visible {
 
 .motion-interactive-card:hover {
   transform: translate3d(0, -4px, 0);
-}
-
-.motion-interactive-pill {
-  transition: transform var(--motion-duration-fast) var(--motion-ease-spring),
-              background-color var(--motion-duration-fast) ease,
-              color var(--motion-duration-fast) ease;
-}
-
-.motion-interactive-pill:active {
-  transform: scale3d(0.96, 0.96, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

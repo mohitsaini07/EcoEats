@@ -11,7 +11,6 @@ const links = [
   { id: "about", label: "About", href: "#about" },
   { id: "how", label: "How it works", href: "#how-it-works" },
   { id: "food", label: "Today's food", href: "#surplus-preview" },
-  { id: "restaurants", label: "For restaurants", href: "#restaurants" },
 ];
 
 export function LandingNav({ user }: { user?: CurrentUser | null } = {}) {

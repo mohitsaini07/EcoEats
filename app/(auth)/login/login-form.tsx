@@ -10,6 +10,7 @@ import {
   IconShoppingBag,
   IconSparkles,
   IconArrowRight,
+  IconShieldCheck,
 } from "@/components/icons";
 
 const DEMO_ACCOUNTS = [
@@ -120,7 +121,7 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
-      {showDemoAccess && (
+      {/* {showDemoAccess && (
         <section
           aria-label="Demo account shortcuts"
           className="overflow-hidden rounded-2xl border border-[#dce9dd] bg-[#f3f8f1]"
@@ -140,7 +141,7 @@ export function LoginForm() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+          <div className="grid gap-2 p-3 grid-cols-2">
             {DEMO_ACCOUNTS.map((account) => {
               const DemoIcon = account.icon;
               return (
@@ -167,7 +168,7 @@ export function LoginForm() {
             })}
           </div>
         </section>
-      )}
+      )} */}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="space-y-2">

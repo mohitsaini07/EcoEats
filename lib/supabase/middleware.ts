@@ -49,6 +49,8 @@ export async function updateSession(request: NextRequest) {
   const isProtectedRoute =
     pathname.startsWith("/marketplace") ||
     pathname.startsWith("/manager") ||
+    pathname.startsWith("/partner") ||
+    pathname.startsWith("/admin") ||
     pathname === "/app" ||
     pathname.startsWith("/app/");
 

@@ -483,7 +483,7 @@ a:focus-visible {
 .eco-stat-value {
   margin-top: var(--eco-space-3);
   color: var(--color-foreground);
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
@@ -1465,7 +1465,9 @@ a:focus-visible {
   font-weight: 600;
   text-decoration: none;
   box-shadow: 0 4px 14px rgba(17, 24, 39, 0.2);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .eco-button-trust-cta:hover {
@@ -1488,7 +1490,7 @@ a:focus-visible {
 }
 
 .eco-stat-value {
-  font-size: clamp(2.2rem, 3.6vw, 3.1rem);
+  font-size: 2.5rem;
   font-weight: 800;
   color: #111827;
   letter-spacing: -0.04em;
@@ -1839,7 +1841,8 @@ a:focus-visible {
 }
 
 @keyframes motionPulseGentle {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale3d(1, 1, 1);
   }
   50% {
@@ -1848,42 +1851,50 @@ a:focus-visible {
 }
 
 .motion-fade-in {
-  animation: motionFadeIn var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionFadeIn var(--motion-duration-smooth) var(--motion-ease-out)
+    both;
   will-change: opacity;
 }
 
 .motion-fade-up {
-  animation: motionFadeUp var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionFadeUp var(--motion-duration-smooth) var(--motion-ease-out)
+    both;
   will-change: transform, opacity;
 }
 
 .motion-hero-phone {
-  animation: motionHeroPhoneFadeUp var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionHeroPhoneFadeUp var(--motion-duration-smooth)
+    var(--motion-ease-out) both;
   will-change: transform, opacity;
 }
 
 .motion-fade-down {
-  animation: motionFadeDown var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionFadeDown var(--motion-duration-smooth) var(--motion-ease-out)
+    both;
   will-change: transform, opacity;
 }
 
 .motion-scale-in {
-  animation: motionScaleIn var(--motion-duration-normal) var(--motion-ease-spring) both;
+  animation: motionScaleIn var(--motion-duration-normal)
+    var(--motion-ease-spring) both;
   will-change: transform, opacity;
 }
 
 .motion-slide-in-right {
-  animation: motionSlideInRight var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionSlideInRight var(--motion-duration-smooth)
+    var(--motion-ease-out) both;
   will-change: transform;
 }
 
 .motion-slide-in-left {
-  animation: motionSlideInLeft var(--motion-duration-smooth) var(--motion-ease-out) both;
+  animation: motionSlideInLeft var(--motion-duration-smooth)
+    var(--motion-ease-out) both;
   will-change: transform;
 }
 
 .motion-modal-enter {
-  animation: motionModalEnter var(--motion-duration-normal) var(--motion-ease-spring) both;
+  animation: motionModalEnter var(--motion-duration-normal)
+    var(--motion-ease-spring) both;
   will-change: transform, opacity;
 }
 
@@ -1892,19 +1903,34 @@ a:focus-visible {
 }
 
 /* Stagger delay utilities */
-.motion-delay-75  { animation-delay: 75ms; }
-.motion-delay-150 { animation-delay: 150ms; }
-.motion-delay-225 { animation-delay: 225ms; }
-.motion-delay-300 { animation-delay: 300ms; }
-.motion-delay-400 { animation-delay: 400ms; }
-.motion-delay-500 { animation-delay: 500ms; }
-.motion-delay-600 { animation-delay: 600ms; }
+.motion-delay-75 {
+  animation-delay: 75ms;
+}
+.motion-delay-150 {
+  animation-delay: 150ms;
+}
+.motion-delay-225 {
+  animation-delay: 225ms;
+}
+.motion-delay-300 {
+  animation-delay: 300ms;
+}
+.motion-delay-400 {
+  animation-delay: 400ms;
+}
+.motion-delay-500 {
+  animation-delay: 500ms;
+}
+.motion-delay-600 {
+  animation-delay: 600ms;
+}
 
 /* Micro-interaction interactive styles */
 .motion-interactive-card {
-  transition: transform var(--motion-duration-normal) var(--motion-ease-out),
-              box-shadow var(--motion-duration-normal) var(--motion-ease-out),
-              border-color var(--motion-duration-fast) ease;
+  transition:
+    transform var(--motion-duration-normal) var(--motion-ease-out),
+    box-shadow var(--motion-duration-normal) var(--motion-ease-out),
+    border-color var(--motion-duration-fast) ease;
   will-change: transform;
 }
 

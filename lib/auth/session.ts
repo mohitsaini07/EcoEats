@@ -92,7 +92,13 @@ export async function requireUser() {
 export async function requireRole(...roles: AppRole[]) {
   const user = await requireUser();
   if (!roles.includes(user.role)) {
-    redirect(user.role === "RESTAURANT_MANAGER" ? "/manager" : "/marketplace");
+    if (user.role === "ADMIN") {
+      redirect("/admin");
+    }
+    if (user.role === "RESTAURANT_MANAGER") {
+      redirect("/manager");
+    }
+    redirect("/app");
   }
   return user;
 }

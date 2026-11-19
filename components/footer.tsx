@@ -88,7 +88,7 @@ export function Footer() {
                 </h3>
                 <ul className="mt-5 space-y-3.5 text-sm font-medium text-white/65">
                   <li><Link href="/" className="transition-colors hover:text-white">Home</Link></li>
-                  <li><Link href="/marketplace" className="transition-colors hover:text-white">Today's food</Link></li>
+                  <li><Link href="/marketplace" className="transition-colors hover:text-white">Today&apos;s food</Link></li>
                   <li><Link href="/#how-it-works" className="transition-colors hover:text-white">How it works</Link></li>
                 </ul>
               </div>

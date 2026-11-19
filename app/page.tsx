@@ -3,7 +3,6 @@ import Link from "next/link";
 import { LandingNav } from "@/components/landing-nav";
 import {
   IconArrowRight,
-  IconCheckCircle,
   IconClock,
   IconLeaf,
   IconMapPin,
@@ -231,7 +230,7 @@ export default async function Home() {
                           </svg>
                         </button>
                         <div className="eco-mockup-location-pill">
-                          Deliver to <strong>Mirqab</strong>
+                           Eco<strong>Eats</strong>
                         </div>
                         <button
                           type="button"
@@ -519,19 +518,19 @@ export default async function Home() {
 
                   <div className="eco-trust-stats">
                     <div className="eco-stat-item">
-                      <span className="eco-stat-value">15+</span>
+                      <span className="eco-stat-value">Upto 70%</span>
                       <span className="eco-stat-label">
-                        Restaurant Partners
+                        Savings on Surplus Food
                       </span>
                     </div>
                     <div className="eco-stat-item">
-                      <span className="eco-stat-value">12k+</span>
-                      <span className="eco-stat-label">Orders Delivered</span>
+                      <span className="eco-stat-value">10 min</span>
+                      <span className="eco-stat-label">Secure Checkout Hold</span>
                     </div>
                     <div className="eco-stat-item">
-                      <span className="eco-stat-value">95%</span>
+                      <span className="eco-stat-value">Local</span>
                       <span className="eco-stat-label">
-                        Customer Satisfaction
+                        Easy Restaurant Pickup
                       </span>
                     </div>
                   </div>

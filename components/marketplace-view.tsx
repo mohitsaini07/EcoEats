@@ -380,7 +380,7 @@ export function MarketplaceView({
               <button
                 type="button"
                 onClick={() => document.getElementById("food-shelf")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="inline-flex items-center gap-2 rounded-full bg-[#DCEED8] px-5 py-3 text-xs font-extrabold text-[#173D2A] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white active:scale-[0.97]"
+                className="inline-flex items-center gap-2 cursor-pointer rounded-full bg-[#DCEED8] px-5 py-3 text-xs font-extrabold text-[#173D2A] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white active:scale-[0.97]"
               >
                 Explore today&apos;s food <span aria-hidden="true">↓</span>
               </button>
@@ -400,7 +400,7 @@ export function MarketplaceView({
                 <button
                   type="button"
                   onClick={() => setIsCartOpen(true)}
-                  className="grid size-10 shrink-0 place-items-center rounded-full bg-[#E5F0E3] text-[#286B41] transition hover:bg-[#D4E8D2]"
+                  className="grid size-10 shrink-0 place-items-center cursor-pointer rounded-full bg-[#E5F0E3] text-[#286B41] transition hover:bg-[#D4E8D2]"
                   aria-label="Open your rescue tray"
                 >
                   <IconShoppingBag size={18} />
@@ -440,7 +440,7 @@ export function MarketplaceView({
                 <button
                   type="button"
                   onClick={() => setIsCartOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#173D2A] px-4 py-2.5 text-[11px] font-extrabold text-white transition hover:bg-[#245A39] active:scale-[0.97]"
+                  className="inline-flex items-center gap-2 cursor-pointer rounded-full bg-[#173D2A] px-4 py-2.5 text-[11px] font-extrabold text-white transition hover:bg-[#245A39] active:scale-[0.97]"
                 >
                   Review tray <span aria-hidden="true">→</span>
                 </button>
@@ -482,7 +482,7 @@ export function MarketplaceView({
                   type="button"
                   onClick={() => setSelectedCategory(category)}
                   aria-pressed={active}
-                  className={`rounded-full px-4 py-2.5 text-xs font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A] focus-visible:ring-offset-2 ${active ? "bg-[#173D2A] text-white shadow-[0_6px_16px_rgba(23,61,42,0.17)]" : "border border-[#E0E6DC] bg-[#FFFEFA] text-[#647267] hover:border-[#BFD8C3] hover:bg-[#EAF3E9] hover:text-[#286B41]"}`}
+                  className={`rounded-full px-4 py-2.5 cursor-pointer text-xs font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#77B88A] focus-visible:ring-offset-2 ${active ? "bg-[#173D2A] text-white shadow-[0_6px_16px_rgba(23,61,42,0.17)]" : "border border-[#E0E6DC] bg-[#FFFEFA] text-[#647267] hover:border-[#BFD8C3] hover:bg-[#EAF3E9] hover:text-[#286B41]"}`}
                 >
                   {category === "All" ? "✳ All food" : category}
                 </button>

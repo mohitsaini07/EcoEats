@@ -259,3 +259,29 @@ GRANT EXECUTE ON FUNCTION public.reject_restaurant_application(UUID, TEXT) TO au
 -- Ensure function ownership is postgres so SECURITY DEFINER bypasses prevent_user_role_change
 ALTER FUNCTION public.approve_restaurant_application(UUID) OWNER TO postgres;
 ALTER FUNCTION public.reject_restaurant_application(UUID, TEXT) OWNER TO postgres;
+
+-- 10. Helper function to check if current user is ADMIN without RLS recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'ADMIN'
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+ALTER FUNCTION public.is_admin() OWNER TO postgres;
+
+-- Allow administrators to view applicant profiles for review
+DROP POLICY IF EXISTS "Admins can view all user profiles" ON public.users;
+CREATE POLICY "Admins can view all user profiles"
+  ON public.users
+  FOR SELECT
+  TO authenticated
+  USING (public.is_admin());
+

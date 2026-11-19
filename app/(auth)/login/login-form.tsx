@@ -87,7 +87,11 @@ export function LoginForm() {
         } else if (normalizedMessage.includes("too many requests")) {
           setErrorMessage("Too many sign-in attempts. Please wait a moment before trying again.");
         } else {
-          setErrorMessage("We couldn't sign you in right now. Please try again in a moment.");
+          setErrorMessage(
+            process.env.NODE_ENV !== "production"
+              ? error.message
+              : "We couldn't sign you in right now. Please try again in a moment."
+          );
         }
 
         setPending(false);
@@ -141,7 +145,7 @@ export function LoginForm() {
             </span>
           </div>
 
-          <div className="grid gap-2 p-3 grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-3">
             {DEMO_ACCOUNTS.map((account) => {
               const DemoIcon = account.icon;
               return (

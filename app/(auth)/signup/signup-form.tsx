@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { signupAction } from "./actions";
 import {
   IconAlertCircle,
   IconCheckCircle,
@@ -100,58 +101,40 @@ export function SignupForm() {
 
     try {
       const supabase = createClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
 
-      const metadata: Record<string, string> = {
-        name: trimmedName,
-      };
-
-      if (accountType === "PARTNER") {
-        metadata.restaurant_name = trimmedRestName;
-        metadata.restaurant_address = trimmedRestAddress;
-        metadata.contact_phone = trimmedPhone;
+      // 1. Client-side defense-in-depth: check for existing session before attempting signup
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        setErrorMessage(
+          "You're already signed in. Please log out before creating another account."
+        );
+        setPending(false);
+        return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+      // 2. Server-side signup action: verifies existing session server-side & registers account
+      const result = await signupAction({
+        name: trimmedName,
         email: trimmedEmail,
         password,
-        options: {
-          data: metadata,
-          emailRedirectTo: `${origin}/auth/callback?next=/app`,
-        },
+        accountType,
+        restaurantName: accountType === "PARTNER" ? trimmedRestName : undefined,
+        restaurantAddress: accountType === "PARTNER" ? trimmedRestAddress : undefined,
+        contactPhone: accountType === "PARTNER" ? trimmedPhone : undefined,
+        origin,
       });
 
-      if (error) {
-        if (
-          error.message.toLowerCase().includes("already registered") ||
-          error.message.toLowerCase().includes("unique constraint") ||
-          error.status === 422
-        ) {
-          setErrorMessage(
-            "An account with this email address already exists. Try signing in instead."
-          );
-        } else if (error.message.toLowerCase().includes("rate limit")) {
-          setErrorMessage(
-            "Too many registration requests. Please wait a few minutes before trying again."
-          );
-        } else {
-          setErrorMessage(error.message);
-        }
+      if (!result.success) {
+        setErrorMessage(result.error || "Failed to create account.");
         setPending(false);
         return;
       }
 
       // If user session is active immediately (e.g. auto-confirm enabled)
-      if (data.session && data.user) {
+      if (result.hasSession) {
         if (accountType === "PARTNER") {
-          // If session exists, ensure the pending application row is recorded
-          await supabase.from("restaurant_applications").insert({
-            user_id: data.user.id,
-            restaurant_name: trimmedRestName,
-            restaurant_address: trimmedRestAddress,
-            contact_phone: trimmedPhone,
-            status: "PENDING",
-          });
           router.replace("/partner/status");
         } else {
           router.replace("/marketplace");

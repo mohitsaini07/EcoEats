@@ -39,9 +39,12 @@ export function MarketplaceView({
 }: {
   initialListings?: FoodListing[];
 }) {
-  const [listings] = useState<FoodListing[]>(
-    initialListings.length > 0 ? initialListings : SAMPLE_LISTINGS,
-  );
+  const [listings] = useState<FoodListing[]>(() => {
+    if (initialListings.length === 0) return SAMPLE_LISTINGS;
+    const dbIds = new Set(initialListings.map((l) => l.id));
+    const extras = SAMPLE_LISTINGS.filter((s) => !dbIds.has(s.id));
+    return [...initialListings, ...extras];
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<ActiveCart | null>(null);
@@ -262,14 +265,14 @@ export function MarketplaceView({
           featured ? "xl:col-span-2 xl:grid xl:grid-cols-[1.05fr_0.95fr]" : ""
         }`}
       >
-        <div className={`relative overflow-hidden bg-[#ECEFE5] ${featured ? "min-h-[270px] xl:min-h-[340px]" : "aspect-[5/4]"}`}>
+        <div className={`relative overflow-hidden bg-[#ECEFE5] ${featured ? "min-h-67.5 xl:min-h-85" : "aspect-5/4"}`}>
           <img
-            src={listing.image_url || FALLBACK_IMAGE}
+            src={listing.image_url}
             alt={listing.title}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.055]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#12271B]/55 via-transparent to-[#12271B]/10" />
+          <div className="absolute inset-0 bg-linear-to-t from-[#12271B]/55 via-transparent to-[#12271B]/10" />
           <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-[#FBFAF4]/95 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#3B5141] shadow-sm backdrop-blur">
             {listing.category}
           </span>
@@ -365,7 +368,7 @@ export function MarketplaceView({
         </div>
 
         {/* Distinctive feature stage + live rescue tray */}
-        <section className="mx-auto mt-5 grid max-w-[1320px] gap-4 overflow-hidden rounded-[32px] bg-[#173D2A] p-5 text-white shadow-[0_24px_65px_rgba(25,57,37,0.16)] sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8 lg:p-10">
+        <section className="mx-auto mt-5 grid max-w-330 gap-4 overflow-hidden rounded-4xl bg-[#173D2A] p-5 text-white shadow-[0_24px_65px_rgba(25,57,37,0.16)] sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8 lg:p-10">
           <div className="flex flex-col justify-center py-2 lg:py-5">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#D3E8D5]">
               <IconSparkles size={13} className="text-[#D8B875]" /> Good food, second chances
@@ -453,7 +456,7 @@ export function MarketplaceView({
         </section>
 
         {/* Browse controls */}
-        <section className="mx-auto mt-12 max-w-[1320px]" aria-label="Find surplus food">
+        <section className="mx-auto mt-12 max-w-330" aria-label="Find surplus food">
           <div className="flex flex-col gap-5 border-b border-[#DFE4D9] pb-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#879486]">Find your next favourite</p>
@@ -495,7 +498,7 @@ export function MarketplaceView({
         </section>
 
         {/* Editorial food shelf */}
-        <section id="food-shelf" className="mx-auto mt-8 max-w-[1320px] scroll-mt-8">
+        <section id="food-shelf" className="mx-auto mt-8 max-w-330 scroll-mt-8">
           {filteredListings.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-[#D9E2D8] bg-[#FFFEFA]/75 px-6 py-16 text-center shadow-sm">
               <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#EAF4E9] text-[#5B966A]"><IconLeaf size={25} /></span>

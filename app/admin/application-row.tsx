@@ -1,7 +1,11 @@
+
 "use client";
 
 import { useState, useTransition } from "react";
-import { approveApplicationAction, rejectApplicationAction } from "./actions";
+import {
+  approveApplicationAction,
+  rejectApplicationAction,
+} from "./actions";
 import {
   IconAlertCircle,
   IconCheckCircle,
@@ -27,7 +31,17 @@ export interface RestaurantApplicationData {
   } | null;
 }
 
-export function ApplicationRow({ app }: { app: RestaurantApplicationData }) {
+const statusStyles = {
+  PENDING: "bg-amber-50 text-amber-800 ring-amber-200",
+  APPROVED: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  REJECTED: "bg-rose-50 text-rose-800 ring-rose-200",
+};
+
+export function ApplicationRow({
+  app,
+}: {
+  app: RestaurantApplicationData;
+}) {
   const [isPending, startTransition] = useTransition();
   const [rejecting, setRejecting] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
@@ -37,12 +51,14 @@ export function ApplicationRow({ app }: { app: RestaurantApplicationData }) {
   function handleApprove() {
     setErrorMessage(null);
     setSuccessMessage(null);
+
     startTransition(async () => {
       const res = await approveApplicationAction(app.id);
+
       if (!res.success) {
         setErrorMessage(res.error || "Approval failed");
       } else {
-        setSuccessMessage("Application approved and restaurant partner activated!");
+        setSuccessMessage("Restaurant partner successfully approved.");
       }
     });
   }
@@ -53,178 +69,214 @@ export function ApplicationRow({ app }: { app: RestaurantApplicationData }) {
     setSuccessMessage(null);
 
     if (!rejectNotes.trim()) {
-      setErrorMessage("Please enter rejection feedback or reason.");
+      setErrorMessage("Please provide a rejection reason.");
       return;
     }
 
     startTransition(async () => {
       const res = await rejectApplicationAction(app.id, rejectNotes);
+
       if (!res.success) {
         setErrorMessage(res.error || "Rejection failed");
       } else {
         setRejecting(false);
-        setSuccessMessage("Application marked as rejected with notes.");
+        setSuccessMessage("Application rejected successfully.");
       }
     });
   }
 
-  const statusBadge = {
-    PENDING: "bg-amber-100 text-amber-900 border-amber-300",
-    APPROVED: "bg-emerald-100 text-emerald-900 border-emerald-300",
-    REJECTED: "bg-rose-100 text-rose-900 border-rose-300",
-  }[app.status];
+  const submittedDate = new Date(app.created_at);
 
   return (
-    <div className="eco-card p-5 space-y-4 border-slate-200 bg-white">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-extrabold text-slate-900">
-              {app.restaurant_name}
-            </h3>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusBadge}`}
-            >
-              {app.status}
-            </span>
+    <article className="group overflow-hidden rounded-[24px] border border-[#E8EAE2] bg-white shadow-[0_4px_24px_rgba(31,55,39,0.035)] transition duration-300 hover:-translate-y-0.5 hover:border-[#C9D8CB] hover:shadow-[0_12px_35px_rgba(31,55,39,0.07)]">
+      <div className="p-5 sm:p-7">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+          <div className="flex gap-4">
+            <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#EEF4EC] text-[#28583A]">
+              <span className="text-lg font-black">
+                {app.restaurant_name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold tracking-tight text-[#203B2A]">
+                  {app.restaurant_name}
+                </h3>
+
+                <span
+                  className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${statusStyles[app.status]}`}
+                >
+                  {app.status}
+                </span>
+              </div>
+
+              <p className="mt-1 text-xs text-[#8A968B]">
+                Application #{app.id.slice(0, 8)}
+              </p>
+
+              <p className="mt-2 text-xs text-[#718074]">
+                Submitted{" "}
+                {submittedDate.toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Submitted {new Date(app.created_at).toLocaleString()}
-          </p>
+
+          {app.status === "PENDING" && !rejecting && (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleApprove}
+                disabled={isPending}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#24583A] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#19452D] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <IconCheckCircle size={15} />
+                {isPending ? "Processing..." : "Approve"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRejecting(true);
+                  setErrorMessage(null);
+                }}
+                disabled={isPending}
+                className="rounded-xl border border-[#F0DADA] bg-white px-4 py-2.5 text-xs font-bold text-[#B44B4B] transition hover:bg-[#FFF5F5] disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Action buttons for PENDING */}
-        {app.status === "PENDING" && !rejecting && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleApprove}
-              disabled={isPending}
-              className="eco-button eco-button-primary text-xs font-bold py-1.5 px-3.5 rounded-lg cursor-pointer flex items-center gap-1.5"
-            >
-              <IconCheckCircle size={14} />
-              {isPending ? "Processing..." : "Approve Partner"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRejecting(true);
-                setErrorMessage(null);
-              }}
-              disabled={isPending}
-              className="eco-button eco-button-secondary text-xs font-bold py-1.5 px-3.5 rounded-lg cursor-pointer text-rose-700 hover:bg-rose-50 border-rose-200"
-            >
-              Reject
-            </button>
+        <div className="my-6 h-px bg-[#EEF0EA]" />
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9AA59B]">
+              Applicant / Owner
+            </p>
+            <p className="mt-2 text-sm font-bold text-[#304C38]">
+              {app.applicant?.name || "Customer Account"}
+            </p>
+            <p className="mt-1 break-all text-xs text-[#829087]">
+              {app.applicant?.email || app.user_id}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9AA59B]">
+              Contact Number
+            </p>
+            <p className="mt-2 text-sm font-semibold text-[#304C38]">
+              {app.contact_phone}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9AA59B]">
+              Restaurant Location
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#637267]">
+              {app.restaurant_address}
+            </p>
+          </div>
+        </div>
+
+        {app.admin_notes && (
+          <div className="mt-6 rounded-2xl border border-[#E9EDE5] bg-[#F8FAF6] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#718074]">
+              Admin Review Feedback
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#526356]">
+              {app.admin_notes}
+            </p>
+
+            {app.reviewed_at && (
+              <p className="mt-2 text-[11px] text-[#98A299]">
+                Reviewed {new Date(app.reviewed_at).toLocaleString("en-IN")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {rejecting && (
+          <form
+            onSubmit={handleReject}
+            className="mt-6 space-y-4 rounded-2xl border border-rose-100 bg-rose-50/60 p-5"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-rose-950">
+                  Reject application
+                </h4>
+                <p className="mt-1 text-xs text-rose-700">
+                  This feedback will be visible to the applicant.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setRejecting(false)}
+                className="rounded-lg p-2 text-rose-500 transition hover:bg-rose-100"
+                aria-label="Close rejection form"
+              >
+                <IconX size={17} />
+              </button>
+            </div>
+
+            <textarea
+              rows={3}
+              required
+              value={rejectNotes}
+              onChange={(e) => setRejectNotes(e.target.value)}
+              placeholder="Explain why this application cannot be approved..."
+              className="w-full resize-none rounded-xl border border-rose-200 bg-white p-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejecting(false)}
+                disabled={isPending}
+                className="rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-rose-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+              >
+                {isPending ? "Rejecting..." : "Confirm rejection"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {(errorMessage || successMessage) && (
+          <div
+            role={errorMessage ? "alert" : "status"}
+            className={`mt-5 flex items-center gap-2 rounded-xl p-3 text-xs font-semibold ${
+              errorMessage
+                ? "border border-rose-200 bg-rose-50 text-rose-800"
+                : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+            }`}
+          >
+            {errorMessage ? (
+              <IconAlertCircle size={16} />
+            ) : (
+              <IconCheckCircle size={16} />
+            )}
+            {errorMessage || successMessage}
           </div>
         )}
       </div>
-
-      {/* Details Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-        <div>
-          <span className="block text-slate-400 font-semibold text-[11px]">
-            Applicant / Owner
-          </span>
-          <span className="font-bold text-slate-800">
-            {app.applicant?.name || "Customer Account"}
-          </span>
-          <span className="block text-slate-500 text-[11px]">
-            {app.applicant?.email || app.user_id}
-          </span>
-        </div>
-
-        <div>
-          <span className="block text-slate-400 font-semibold text-[11px]">
-            Contact Phone
-          </span>
-          <span className="font-bold text-slate-800">{app.contact_phone}</span>
-        </div>
-
-        <div className="sm:col-span-2 md:col-span-1">
-          <span className="block text-slate-400 font-semibold text-[11px]">
-            Location / Address
-          </span>
-          <span className="text-slate-700 line-clamp-2">
-            {app.restaurant_address}
-          </span>
-        </div>
-      </div>
-
-      {/* Admin Notes if present */}
-      {app.admin_notes && (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
-          <span className="font-bold text-slate-700">Admin Review Feedback:</span>
-          <p className="text-slate-600 font-mono text-[11px]">{app.admin_notes}</p>
-          {app.reviewed_at && (
-            <span className="block text-[10px] text-slate-400">
-              Reviewed at {new Date(app.reviewed_at).toLocaleString()}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Rejection Form Drawer / Box */}
-      {rejecting && (
-        <form
-          onSubmit={handleReject}
-          className="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-3"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-rose-950">
-              Reason for Rejection (visible to applicant):
-            </span>
-            <button
-              type="button"
-              onClick={() => setRejecting(false)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <IconX size={16} />
-            </button>
-          </div>
-          <textarea
-            rows={2}
-            required
-            value={rejectNotes}
-            onChange={(e) => setRejectNotes(e.target.value)}
-            placeholder="e.g. Please provide an authentic commercial address and registered trade phone number."
-            className="eco-field text-xs resize-none bg-white"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setRejecting(false)}
-              disabled={isPending}
-              className="eco-button eco-button-secondary text-xs font-bold py-1 px-3"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="eco-button bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer"
-            >
-              {isPending ? "Rejecting..." : "Confirm Rejection"}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Success/Error Feedback */}
-      {errorMessage && (
-        <div role="alert" className="eco-status-note text-xs">
-          <IconAlertCircle size={16} className="shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
-          <IconCheckCircle size={16} className="text-emerald-700 shrink-0" />
-          <span>{successMessage}</span>
-        </div>
-      )}
-    </div>
+    </article>
   );
 }

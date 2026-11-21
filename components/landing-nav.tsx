@@ -56,7 +56,7 @@ export function LandingNav({ user }: { user?: CurrentUser | null } = {}) {
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[#31513D] transition hover:bg-[#EEF5ED] motion-interactive-pill hidden sm:inline-block"
+              className="rounded-full px-6 py-3 text-sm font-semibold text-[#31513D] transition hover:bg-[#EEF5ED] motion-interactive-pill hidden sm:inline-block"
             >
               Sign in
             </Link>
@@ -64,7 +64,7 @@ export function LandingNav({ user }: { user?: CurrentUser | null } = {}) {
               href="/signup"
               className="eco-button eco-button-hero motion-interactive-pill"
             >
-              Explore deals <IconArrowRight size={16} />
+              Register <IconArrowRight size={16} />
             </Link>
           </div>
         )}

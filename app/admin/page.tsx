@@ -81,159 +81,169 @@ export default async function AdminDashboardPage(props: AdminPageProps) {
       ? applications
       : applications.filter((a) => a.status === filterStatus);
 
-  return (
-    <main className="eco-container py-8 max-w-5xl mx-auto space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider mb-1">
-            <IconChefHat size={16} />
-            <span>Admin Review Center</span>
+  
+return (
+  <main className="mx-auto w-full max-w-[1440px] space-y-9 px-5 py-9 sm:px-8 lg:px-12 lg:py-12">
+    {/* Dashboard heading */}
+    <section className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+      <div>
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#DCE8DA] bg-[#EEF4EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#315E3D]">
+          <IconChefHat size={14} />
+          EcoEats Administration
+        </div>
+
+        <h1 className="text-3xl font-black tracking-[-0.04em] text-[#203B2A] sm:text-4xl">
+          Partner applications<span className="text-[#77A47C]">.</span>
+        </h1>
+
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#77847A]">
+          Review restaurant applications, verify partner details and manage
+          your growing restaurant network.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-[#E6EAE1] bg-white px-5 py-3 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#98A298]">
+          Total applications
+        </p>
+        <p className="mt-1 text-2xl font-black text-[#254A32]">
+          {totalCount.toString().padStart(2, "0")}
+        </p>
+      </div>
+    </section>
+
+    {/* KPI cards */}
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
+      {[
+        {
+          label: "All applications",
+          value: totalCount,
+          icon: <IconChefHat size={19} />,
+          color: "text-[#31583B]",
+          bg: "bg-[#EEF4EC]",
+          active: filterStatus === "ALL",
+          href: "/admin",
+        },
+        {
+          label: "Awaiting review",
+          value: pendingCount,
+          icon: <IconClock size={19} />,
+          color: "text-amber-700",
+          bg: "bg-amber-50",
+          active: filterStatus === "PENDING",
+          href: "/admin?status=PENDING",
+        },
+        {
+          label: "Approved partners",
+          value: approvedCount,
+          icon: <IconCheckCircle size={19} />,
+          color: "text-emerald-700",
+          bg: "bg-emerald-50",
+          active: filterStatus === "APPROVED",
+          href: "/admin?status=APPROVED",
+        },
+        {
+          label: "Not approved",
+          value: rejectedCount,
+          icon: <IconAlertCircle size={19} />,
+          color: "text-rose-700",
+          bg: "bg-rose-50",
+          active: filterStatus === "REJECTED",
+          href: "/admin?status=REJECTED",
+        },
+      ].map((item) => (
+        <a
+          key={item.label}
+          href={item.href}
+          className={`group rounded-[22px] border bg-white p-5 transition duration-200 hover:-translate-y-1 hover:shadow-lg ${
+            item.active
+              ? "border-[#AFC8B0] shadow-[0_5px_20px_rgba(37,74,50,0.07)]"
+              : "border-[#E7EAE2] shadow-[0_3px_15px_rgba(37,74,50,0.025)]"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`grid size-10 place-items-center rounded-xl ${item.bg} ${item.color}`}>
+              {item.icon}
+            </span>
+            <span className="text-xs text-[#A2AAA1] transition group-hover:translate-x-1">
+              ↗
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-foreground)] tracking-tight">
-            Restaurant Partner Applications
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--eco-ink-700)] mt-0.5">
-            Verify kitchen applications and authorize restaurant managers.
+
+          <p className="mt-5 text-[11px] font-bold uppercase tracking-wider text-[#929C91]">
+            {item.label}
           </p>
+
+          <p className={`mt-1 text-3xl font-black tracking-tight ${item.color}`}>
+            {item.value.toString().padStart(2, "0")}
+          </p>
+        </a>
+      ))}
+    </section>
+
+    {/* Applications section */}
+    <section className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8A9A8A]">
+            Review workspace
+          </p>
+          <h2 className="mt-1 text-xl font-extrabold tracking-tight text-[#263E2D]">
+            Restaurant applications
+          </h2>
+          <p className="mt-1 text-xs text-[#89958A]">
+            {filteredApplications.length} applications currently displayed
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[#E6EAE2] bg-white p-1.5 shadow-sm">
+          {[
+            { label: "All", count: totalCount, value: "ALL", href: "/admin" },
+            { label: "Pending", count: pendingCount, value: "PENDING", href: "/admin?status=PENDING" },
+            { label: "Approved", count: approvedCount, value: "APPROVED", href: "/admin?status=APPROVED" },
+            { label: "Rejected", count: rejectedCount, value: "REJECTED", href: "/admin?status=REJECTED" },
+          ].map((tab) => (
+            <a
+              key={tab.value}
+              href={tab.href}
+              className={`rounded-xl px-3 py-2 text-[11px] font-bold transition sm:px-4 ${
+                filterStatus === tab.value
+                  ? "bg-[#254B32] text-white shadow-sm"
+                  : "text-[#718075] hover:bg-[#F1F5EF] hover:text-[#254B32]"
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1.5 ${filterStatus === tab.value ? "text-white/70" : "text-[#A1ACA1]"}`}>
+                {tab.count}
+              </span>
+            </a>
+          ))}
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <a
-          href="/admin"
-          className={`eco-card p-4 transition hover:border-[var(--color-primary)] ${
-            filterStatus === "ALL" ? "border-slate-800 ring-2 ring-slate-800/10" : "border-slate-200"
-          }`}
-        >
-          <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Total Applications
-          </span>
-          <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {totalCount}
-          </span>
-        </a>
-
-        <a
-          href="/admin?status=PENDING"
-          className={`eco-card p-4 transition hover:border-amber-400 ${
-            filterStatus === "PENDING" ? "border-amber-500 ring-2 ring-amber-500/10 bg-amber-50/30" : "border-slate-200"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold text-amber-800 uppercase tracking-wider">
-              Pending Review
-            </span>
-            <IconClock size={16} className="text-amber-600" />
+      {filteredApplications.length === 0 ? (
+        <div className="rounded-[28px] border border-dashed border-[#D8E1D5] bg-white/70 px-6 py-20 text-center">
+          <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-[#EEF4EC] text-[#578061]">
+            <IconChefHat size={28} />
           </div>
-          <span className="text-2xl font-black text-amber-950 mt-1 block">
-            {pendingCount}
-          </span>
-        </a>
-
-        <a
-          href="/admin?status=APPROVED"
-          className={`eco-card p-4 transition hover:border-emerald-400 ${
-            filterStatus === "APPROVED" ? "border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/30" : "border-slate-200"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
-              Approved Partners
-            </span>
-            <IconCheckCircle size={16} className="text-emerald-600" />
-          </div>
-          <span className="text-2xl font-black text-emerald-950 mt-1 block">
-            {approvedCount}
-          </span>
-        </a>
-
-        <a
-          href="/admin?status=REJECTED"
-          className={`eco-card p-4 transition hover:border-rose-400 ${
-            filterStatus === "REJECTED" ? "border-rose-500 ring-2 ring-rose-500/10 bg-rose-50/30" : "border-slate-200"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold text-rose-800 uppercase tracking-wider">
-              Not Approved
-            </span>
-            <IconAlertCircle size={16} className="text-rose-600" />
-          </div>
-          <span className="text-2xl font-black text-rose-950 mt-1 block">
-            {rejectedCount}
-          </span>
-        </a>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <a
-          href="/admin"
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-            filterStatus === "ALL"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          All ({totalCount})
-        </a>
-        <a
-          href="/admin?status=PENDING"
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-            filterStatus === "PENDING"
-              ? "bg-amber-600 text-white"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          <span className="size-2 rounded-full bg-amber-400" />
-          Pending ({pendingCount})
-        </a>
-        <a
-          href="/admin?status=APPROVED"
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-            filterStatus === "APPROVED"
-              ? "bg-emerald-600 text-white"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          Approved ({approvedCount})
-        </a>
-        <a
-          href="/admin?status=REJECTED"
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-            filterStatus === "REJECTED"
-              ? "bg-rose-600 text-white"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          Rejected ({rejectedCount})
-        </a>
-      </div>
-
-      {/* Applications List */}
-      <section className="space-y-4">
-        {filteredApplications.length === 0 ? (
-          <div className="eco-card p-12 text-center space-y-3 border-dashed border-slate-300">
-            <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-              <IconChefHat size={24} />
-            </div>
-            <h3 className="text-base font-bold text-slate-700">
-              No applications in this category
-            </h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              {filterStatus === "PENDING"
-                ? "All caught up! There are currently no partner applications awaiting review."
-                : "No partner applications found matching this status filter."}
-            </p>
-          </div>
-        ) : (
-          filteredApplications.map((app) => (
+          <h3 className="mt-5 text-lg font-bold text-[#294631]">
+            No applications found
+          </h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#879388]">
+            {filterStatus === "PENDING"
+              ? "You're all caught up. There are no restaurant applications waiting for review."
+              : "There are no applications matching this filter right now."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredApplications.map((app) => (
             <ApplicationRow key={app.id} app={app} />
-          ))
-        )}
-      </section>
-    </main>
-  );
+          ))}
+        </div>
+      )}
+    </section>
+  </main>
+);
+
 }

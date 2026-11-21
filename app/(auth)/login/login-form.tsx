@@ -125,7 +125,7 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
-      {/* {showDemoAccess && (
+      {showDemoAccess && (
         <section
           aria-label="Demo account shortcuts"
           className="overflow-hidden rounded-2xl border border-[#dce9dd] bg-[#f3f8f1]"
@@ -145,7 +145,7 @@ export function LoginForm() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
             {DEMO_ACCOUNTS.map((account) => {
               const DemoIcon = account.icon;
               return (
@@ -172,7 +172,7 @@ export function LoginForm() {
             })}
           </div>
         </section>
-      )} */}
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="space-y-2">
@@ -251,7 +251,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={pending}
-          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d4b31] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_18px_rgba(29,75,49,0.18)] transition hover:-translate-y-0.5 hover:bg-[#286342] hover:shadow-[0_12px_24px_rgba(29,75,49,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39734d] focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+          className="group flex w-full items-center justify-center gap-2 cursor-pointer rounded-xl bg-[#1d4b31] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_18px_rgba(29,75,49,0.18)] transition hover:-translate-y-0.5 hover:bg-[#286342] hover:shadow-[0_12px_24px_rgba(29,75,49,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39734d] focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
         >
           {pending ? (
             <>

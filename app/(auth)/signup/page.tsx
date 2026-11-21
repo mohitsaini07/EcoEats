@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
-import { IconLeaf, IconMapPin, IconShoppingBag } from "@/components/icons";
+import { IconLeaf, IconMapPin, IconShoppingBag, IconArrowRight } from "@/components/icons";
+import { SignOutButton } from "@/components/sign-out-button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { SignupForm } from "./signup-form";
 
@@ -13,10 +13,20 @@ export const metadata = {
     "Join EcoEats to discover discounted surplus food from local cafes and bakeries. Reserve online and pick it up nearby.",
 };
 
+function getDashboardPath(role: string) {
+  if (role === "ADMIN") return "/admin";
+  if (role === "RESTAURANT_MANAGER") return "/manager";
+  return "/marketplace";
+}
+
+function getDashboardLabel(role: string) {
+  if (role === "ADMIN") return "Admin Dashboard";
+  if (role === "RESTAURANT_MANAGER") return "Manager Hub";
+  return "Marketplace";
+}
+
 export default async function SignupPage() {
-  if (await getCurrentUser()) {
-    redirect("/login");
-  }
+  const currentUser = await getCurrentUser();
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#FBFAF4] text-[#17251D]">
@@ -119,19 +129,59 @@ export default async function SignupPage() {
         {/* Sign-up form */}
         <div className="mx-auto w-full max-w-[500px] lg:ml-auto">
           <div className="rounded-[2rem] border border-[#E7E9E1] bg-white p-6 shadow-[0_24px_80px_rgba(23,61,42,0.10)] sm:p-8 lg:p-9">
-            <div className="mb-7">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#368252]">
-                Get started for free
-              </p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[#173D2A] sm:text-3xl">
-                Create your account
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[#718077]">
-                A few details and you&apos;re ready to discover nearby food deals.
-              </p>
-            </div>
+            {currentUser ? (
+              <>
+                <div className="mb-7">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#368252]">
+                    Already signed in
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-[#173D2A] sm:text-3xl">
+                    You&apos;re already signed in
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[#718077]">
+                    You&apos;re already signed in. Please log out before creating another account.
+                  </p>
+                </div>
 
-            <SignupForm />
+                <div className="rounded-2xl border border-[#C6E2CD] bg-[#EAF5EC] p-4 text-[#1C3D29] shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#183B28] px-2.5 py-1 text-[11px] font-extrabold text-white">
+                      <span className="size-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+                      Signed in
+                    </span>
+                    <SignOutButton />
+                  </div>
+                  <p className="mt-2 text-xs text-[#526D59]">
+                    Signed in as <strong className="text-[#183B28]">{currentUser.name}</strong> ({currentUser.email})
+                  </p>
+                  <div className="mt-3">
+                    <Link
+                      href={getDashboardPath(currentUser.role)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#28633B] py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#1D4A2C]"
+                    >
+                      <span>Go to {getDashboardLabel(currentUser.role)}</span>
+                      <IconArrowRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-7">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#368252]">
+                    Get started for free
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-[#173D2A] sm:text-3xl">
+                    Create your account
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[#718077]">
+                    A few details and you&apos;re ready to discover nearby food deals.
+                  </p>
+                </div>
+
+                <SignupForm />
+              </>
+            )}
 
             <div className="mt-6 border-t border-[#EEF0E9] pt-5 text-center">
               <p className="text-sm text-[#718077]">

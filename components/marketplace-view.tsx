@@ -16,6 +16,12 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { SAMPLE_LISTINGS } from "@/lib/data/sample-listings";
 import type { FoodListing, ActiveCart } from "@/lib/types/marketplace";
+import {
+  addToCartAction,
+  updateCartQuantityAction,
+  clearCartAction,
+  switchCartRestaurantAction,
+} from "@/app/marketplace/cart-actions";
 
 const CATEGORIES = ["All", "Bakery", "Meals", "Cafe", "Dessert"] as const;
 const FALLBACK_IMAGE =
@@ -36,8 +42,10 @@ function getDiscount(originalPrice: number, discountedPrice: number) {
 
 export function MarketplaceView({
   initialListings = [],
+  initialCart = null,
 }: {
   initialListings?: FoodListing[];
+  initialCart?: ActiveCart | null;
 }) {
   const [listings] = useState<FoodListing[]>(() => {
     if (initialListings.length === 0) return SAMPLE_LISTINGS;
@@ -47,10 +55,22 @@ export function MarketplaceView({
   });
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [cart, setCart] = useState<ActiveCart | null>(null);
+  const [cart, setCart] = useState<ActiveCart | null>(initialCart ?? null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [pendingListing, setPendingListing] = useState<FoodListing | null>(null);
+  const [, setIsSyncing] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "error" | "info";
+  } | null>(null);
+
+  function showNotification(message: string, type: "error" | "info" = "info") {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification((curr) => (curr?.message === message ? null : curr));
+    }, 4000);
+  }
 
   const filteredListings = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -87,7 +107,7 @@ export function MarketplaceView({
         previousCart.restaurant_id !== listing.restaurant_id
       ) {
         return {
-          id: `cart-${Date.now()}`,
+          id: previousCart?.id ?? `cart-${Date.now()}`,
           restaurant_id: listing.restaurant_id,
           restaurant_name: listing.restaurant_name,
           items: [
@@ -130,7 +150,7 @@ export function MarketplaceView({
     });
   }
 
-  function handleAddToCart(listing: FoodListing) {
+  async function handleAddToCart(listing: FoodListing) {
     if (listing.available_quantity < 1) return;
 
     if (
@@ -149,21 +169,65 @@ export function MarketplaceView({
     if (currentQuantity >= listing.available_quantity) return;
 
     setPendingListing(null);
+
+    const previousCart = cart;
     addItemToCart(listing);
+
+    try {
+      setIsSyncing(true);
+      const res = await addToCartAction(listing.id);
+      if (!res.success) {
+        if (res.conflict) {
+          setCart(previousCart);
+          setPendingListing(listing);
+        } else {
+          setCart(previousCart);
+          showNotification(res.error, "error");
+        }
+      } else if (res.data) {
+        setCart(res.data);
+      }
+    } catch {
+      setCart(previousCart);
+      showNotification("Failed to update cart. Please check your connection.", "error");
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
-  function handleClearAndSwitch() {
+  async function handleClearAndSwitch() {
     if (!pendingListing) return;
-    addItemToCart(pendingListing);
+    const targetListing = pendingListing;
     setPendingListing(null);
+
+    const previousCart = cart;
+    addItemToCart(targetListing);
+
+    try {
+      setIsSyncing(true);
+      const res = await switchCartRestaurantAction(targetListing.id);
+      if (!res.success) {
+        setCart(previousCart);
+        showNotification(res.error, "error");
+      } else if (res.data) {
+        setCart(res.data);
+      }
+    } catch {
+      setCart(previousCart);
+      showNotification("Failed to switch kitchen tray.", "error");
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
-  function handleUpdateQuantity(listingId: string, quantity: number) {
+  async function handleUpdateQuantity(listingId: string, quantity: number) {
     if (!cart) return;
 
     const listing = listings.find((item) => item.id === listingId);
     const maxStock = listing?.available_quantity ?? 99;
     const clampedQuantity = Math.min(quantity, maxStock);
+
+    const previousCart = cart;
 
     if (clampedQuantity <= 0) {
       const remainingItems = cart.items.filter(
@@ -171,31 +235,60 @@ export function MarketplaceView({
       );
       if (remainingItems.length === 0) {
         setCart(null);
-        return;
+      } else {
+        const total = remainingItems.reduce(
+          (sum, item) => sum + item.listing.discounted_price * item.quantity,
+          0,
+        );
+        setCart({ ...cart, items: remainingItems, total_amount: total });
       }
-
-      const total = remainingItems.reduce(
+    } else {
+      const updatedItems = cart.items.map((item) =>
+        item.food_listing_id === listingId
+          ? { ...item, quantity: clampedQuantity }
+          : item,
+      );
+      const total = updatedItems.reduce(
         (sum, item) => sum + item.listing.discounted_price * item.quantity,
         0,
       );
-      setCart({ ...cart, items: remainingItems, total_amount: total });
-      return;
+      setCart({ ...cart, items: updatedItems, total_amount: total });
     }
 
-    const updatedItems = cart.items.map((item) =>
-      item.food_listing_id === listingId
-        ? { ...item, quantity: clampedQuantity }
-        : item,
-    );
-    const total = updatedItems.reduce(
-      (sum, item) => sum + item.listing.discounted_price * item.quantity,
-      0,
-    );
-    setCart({ ...cart, items: updatedItems, total_amount: total });
+    try {
+      setIsSyncing(true);
+      const res = await updateCartQuantityAction(listingId, clampedQuantity);
+      if (!res.success) {
+        setCart(previousCart);
+        showNotification(res.error, "error");
+      } else {
+        setCart(res.data);
+      }
+    } catch {
+      setCart(previousCart);
+      showNotification("Failed to update item quantity.", "error");
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
-  function handleClearCart() {
+  async function handleClearCart() {
+    const previousCart = cart;
     setCart(null);
+
+    try {
+      setIsSyncing(true);
+      const res = await clearCartAction();
+      if (!res.success) {
+        setCart(previousCart);
+        showNotification(res.error, "error");
+      }
+    } catch {
+      setCart(previousCart);
+      showNotification("Failed to clear tray.", "error");
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function handleProceedToCheckout() {
@@ -345,6 +438,29 @@ export function MarketplaceView({
 
   return (
     <main id="main-content" className="relative min-h-screen overflow-hidden bg-[#FBFAF5] text-[#17251D]">
+      {/* Toast Notification */}
+      {notification && (
+        <aside
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-2xl border border-[#F0D0D0] bg-white px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.12)] motion-fade-in"
+        >
+          <IconAlertCircle
+            size={18}
+            className={
+              notification.type === "error" ? "text-[#D32F2F]" : "text-[#2E7D32]"
+            }
+          />
+          <p className="text-xs font-semibold text-[#2C3E30]">{notification.message}</p>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="ml-auto text-xs text-[#8C988D] hover:text-[#2C3E30]"
+          >
+            ✕
+          </button>
+        </aside>
+      )}
+
       {/* Atmospheric background */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-48 -top-48 size-[38rem] rounded-full bg-[#D8E9D4]/45 blur-[120px]" />

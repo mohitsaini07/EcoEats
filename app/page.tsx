@@ -662,7 +662,7 @@ export default async function Home() {
                               {listing.title}
                             </h3>
                             <p className="mt-1 text-xs text-[#839084]">
-                              From a nearby local kitchen
+                              {listing.description}
                             </p>
                           </div>
                         </div>

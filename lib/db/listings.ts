@@ -25,7 +25,7 @@ export type CreateListingInput = {
 
 const CATEGORY_IMAGES: Record<string, string> = {
   bakery: "./images/skyler-ewing.jpg",
-  meals: "./images/sonny-mauricio.jpg",
+  meals: "./images/veggie-sandwich.jpg",
   cafe: "./images/cinnamon-rolls.jpg",
   dessert: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=800",
   vegan: "./images/sonny-mauricio.jpg",
@@ -360,4 +360,172 @@ export async function createFoodListingInDb(
     restaurant_name: restaurant.name,
     restaurant_address: restaurant.address,
   });
+}
+
+export type UpdateListingInput = {
+  id: string;
+  title: string;
+  category: "Bakery" | "Meals" | "Cafe" | "Dessert" | "Vegan";
+  quantity: number;
+  availableQuantity: number;
+  originalPrice: number;
+  discountedPrice: number;
+  pickupStart: string;
+  pickupEnd: string;
+  description?: string;
+  imageUrl?: string | null;
+  status?: "ACTIVE" | "CANCELLED" | "DRAFT" | "SOLD_OUT";
+};
+
+async function verifyListingOwnership(listingId: string, managerId: string, isAdmin = false) {
+  const [listing] = await sql`
+    SELECT fl.*, r.name AS restaurant_name, r.address AS restaurant_address, r.manager_id
+    FROM food_listings fl
+    JOIN restaurants r ON fl.restaurant_id = r.id
+    WHERE fl.id = ${listingId}
+  `;
+
+  if (!listing) {
+    throw new Error("Food batch listing not found.");
+  }
+
+  if (!isAdmin && listing.manager_id !== managerId) {
+    throw new Error("You do not have permission to manage this food batch.");
+  }
+
+  return listing;
+}
+
+/**
+ * Update an existing food listing batch in PostgreSQL.
+ */
+export async function updateFoodListingInDb(
+  input: UpdateListingInput,
+  managerId: string,
+  isAdmin = false
+): Promise<FoodListing> {
+  const currentListing = await verifyListingOwnership(input.id, managerId, isAdmin);
+
+  const claimedUnits = Math.max(0, Number(currentListing.quantity) - Number(currentListing.available_quantity));
+  if (input.quantity < claimedUnits) {
+    throw new Error(`Total units cannot be less than ${claimedUnits} (units already ordered by customers).`);
+  }
+
+  if (input.availableQuantity < 0 || input.availableQuantity > input.quantity) {
+    throw new Error("Available units must be between 0 and total batch units.");
+  }
+
+  const { start, end } = parsePickupTimes(input.pickupStart, input.pickupEnd);
+
+  // Determine next status
+  let nextStatus = input.status || currentListing.status;
+  if (nextStatus === "ACTIVE" && input.availableQuantity === 0) {
+    nextStatus = "SOLD_OUT";
+  } else if (nextStatus === "SOLD_OUT" && input.availableQuantity > 0) {
+    nextStatus = "ACTIVE";
+  }
+
+  const [updatedRow] = await sql`
+    UPDATE food_listings
+    SET name = ${input.title.trim()},
+        category = ${input.category.toUpperCase()},
+        original_price = ${input.originalPrice},
+        discounted_price = ${input.discountedPrice},
+        quantity = ${input.quantity},
+        available_quantity = ${input.availableQuantity},
+        pickup_start = ${start.toISOString()},
+        pickup_end = ${end.toISOString()},
+        description = ${input.description !== undefined ? input.description.trim() : currentListing.description},
+        image_url = ${input.imageUrl !== undefined ? input.imageUrl : currentListing.image_url},
+        status = ${nextStatus},
+        updated_at = NOW()
+    WHERE id = ${input.id}
+    RETURNING *
+  `;
+
+  return mapRowToListing({
+    ...updatedRow,
+    restaurant_name: currentListing.restaurant_name,
+    restaurant_address: currentListing.restaurant_address,
+  });
+}
+
+/**
+ * Deactivate or Reactivate a food listing batch.
+ */
+export async function toggleListingStatusInDb(
+  listingId: string,
+  managerId: string,
+  targetStatus: "ACTIVE" | "CANCELLED",
+  isAdmin = false
+): Promise<FoodListing> {
+  const currentListing = await verifyListingOwnership(listingId, managerId, isAdmin);
+
+  let nextStatus: "ACTIVE" | "CANCELLED" | "SOLD_OUT" = targetStatus;
+  if (targetStatus === "ACTIVE" && Number(currentListing.available_quantity) <= 0) {
+    nextStatus = "SOLD_OUT";
+  }
+
+  const [updatedRow] = await sql`
+    UPDATE food_listings
+    SET status = ${nextStatus},
+        updated_at = NOW()
+    WHERE id = ${listingId}
+    RETURNING *
+  `;
+
+  return mapRowToListing({
+    ...updatedRow,
+    restaurant_name: currentListing.restaurant_name,
+    restaurant_address: currentListing.restaurant_address,
+  });
+}
+
+/**
+ * Safely delete a food listing if no active reservations or order dependencies exist.
+ */
+export async function deleteFoodListingInDb(
+  listingId: string,
+  managerId: string,
+  isAdmin = false
+): Promise<{ success: boolean; error?: string }> {
+  await verifyListingOwnership(listingId, managerId, isAdmin);
+
+  // Check 1: order dependencies
+  const [orderDep] = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM order_items
+    WHERE food_listing_id = ${listingId}
+  `;
+
+  if (orderDep && orderDep.count > 0) {
+    return {
+      success: false,
+      error: "Cannot delete this batch because it is linked to past customer orders. Please Deactivate it instead to hide it from the marketplace.",
+    };
+  }
+
+  // Check 2: active inventory reservations
+  const [activeRes] = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM inventory_reservations
+    WHERE food_listing_id = ${listingId}
+      AND status = 'ACTIVE'
+      AND expires_at > NOW()
+  `;
+
+  if (activeRes && activeRes.count > 0) {
+    return {
+      success: false,
+      error: "Cannot delete this batch while customers have active checkout reservations in progress. Please wait for the reservation window to expire.",
+    };
+  }
+
+  // Transaction: remove any un-checked-out cart items, then delete the listing
+  await sql.begin(async (tx) => {
+    await tx`DELETE FROM cart_items WHERE food_listing_id = ${listingId}`;
+    await tx`DELETE FROM food_listings WHERE id = ${listingId}`;
+  });
+
+  return { success: true };
 }

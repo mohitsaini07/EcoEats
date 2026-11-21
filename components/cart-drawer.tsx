@@ -347,7 +347,7 @@ export function CartDrawer({
             <button
               type="button"
               onClick={onProceedToCheckout}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#246b3e] px-5 py-4 text-sm font-bold text-white shadow-[0_9px_22px_rgba(36,107,62,0.2)] transition hover:-translate-y-0.5 hover:bg-[#1c5932] hover:shadow-[0_12px_26px_rgba(36,107,62,0.25)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#246b3e] focus-visible:ring-offset-2"
+              className="mt-4 flex w-full items-center justify-center gap-2 cursor-pointer rounded-full bg-[#246b3e] px-5 py-4 text-sm font-bold text-white shadow-[0_9px_22px_rgba(36,107,62,0.2)] transition hover:-translate-y-0.5 hover:bg-[#1c5932] hover:shadow-[0_12px_26px_rgba(36,107,62,0.25)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#246b3e] focus-visible:ring-offset-2"
             >
               Continue to checkout
               <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs tabular-nums">

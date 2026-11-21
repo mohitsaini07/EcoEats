@@ -13,7 +13,7 @@ export type FoodListing = {
   discounted_price: number;
   pickup_start: string;
   pickup_end: string;
-  status: "ACTIVE" | "SOLD_OUT" | "EXPIRED" | "DRAFT";
+  status: "ACTIVE" | "SOLD_OUT" | "EXPIRED" | "DRAFT" | "CANCELLED";
   image_url?: string;
   dietary_tags?: string[];
 };

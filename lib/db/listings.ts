@@ -20,6 +20,7 @@ export type CreateListingInput = {
   pickupStart: string;
   pickupEnd: string;
   description?: string;
+  imageUrl?: string;
 };
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -125,7 +126,7 @@ function mapRowToListing(row: any): FoodListing {
     pickup_start: formatPickupTime(row.pickup_start),
     pickup_end: formatPickupTime(row.pickup_end),
     status: row.status as "ACTIVE" | "SOLD_OUT" | "EXPIRED" | "DRAFT",
-    image_url: getCategoryImage(cat),
+    image_url: row.image_url || getCategoryImage(cat),
     dietary_tags: ["Fresh Batch", "Packaged for Pickup"],
   };
 }
@@ -144,6 +145,7 @@ export async function getActiveFoodListings(): Promise<FoodListing[]> {
         fl.name AS title,
         fl.description,
         fl.category,
+        fl.image_url,
         fl.quantity,
         fl.available_quantity,
         fl.original_price,
@@ -213,6 +215,7 @@ export async function getManagerDashboardData(managerId: string) {
         fl.name AS title,
         fl.description,
         fl.category,
+        fl.image_url,
         fl.quantity,
         fl.available_quantity,
         fl.original_price,
@@ -333,7 +336,8 @@ export async function createFoodListingInDb(
       available_quantity,
       pickup_start,
       pickup_end,
-      status
+      status,
+      image_url
     ) VALUES (
       ${restaurant.id},
       ${input.title.trim()},
@@ -345,7 +349,8 @@ export async function createFoodListingInDb(
       ${input.quantity},
       ${start.toISOString()},
       ${end.toISOString()},
-      'ACTIVE'
+      'ACTIVE',
+      ${input.imageUrl || null}
     )
     RETURNING *
   `;

@@ -7,6 +7,7 @@ import {
   IconCheckCircle,
   IconAlertCircle,
   IconX,
+  IconPhoto,
 } from "@/components/icons";
 import type { FoodListing } from "@/lib/types/marketplace";
 import { createBatchListingAction } from "@/app/manager/actions";
@@ -125,6 +126,9 @@ export function ManagerView({
   const [newPickupStart, setNewPickupStart] = useState("8:00 PM");
   const [newPickupEnd, setNewPickupEnd] = useState("9:30 PM");
   const [newDescription, setNewDescription] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const pendingPickupsCount = queue.filter((item) => item.status === "READY_FOR_PICKUP").length;
   const completedPickupsCount = queue.filter((item) => item.status === "COMPLETED").length;
@@ -182,6 +186,29 @@ export function ManagerView({
     );
   }
 
+  function handleImageSelect(file: File | null) {
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setListingError("Please select a valid image file (PNG, JPG, WebP, or GIF).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setListingError("Image file size must be less than 10MB.");
+      return;
+    }
+    setListingError(null);
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
   function resetListingForm() {
     setNewTitle("");
     setNewCategory("Bakery");
@@ -191,6 +218,9 @@ export function ManagerView({
     setNewPickupStart("8:00 PM");
     setNewPickupEnd("9:30 PM");
     setNewDescription("");
+    setImageFile(null);
+    setImagePreview(null);
+    setIsDragging(false);
     setListingError(null);
   }
 
@@ -221,16 +251,20 @@ export function ManagerView({
 
     setIsSaving(true);
     try {
-      const res = await createBatchListingAction({
-        title: newTitle.trim(),
-        category: newCategory,
-        quantity,
-        originalPrice,
-        discountedPrice,
-        pickupStart: newPickupStart.trim(),
-        pickupEnd: newPickupEnd.trim(),
-        description: newDescription.trim(),
-      });
+      const formData = new FormData();
+      formData.append("title", newTitle.trim());
+      formData.append("category", newCategory);
+      formData.append("quantity", String(quantity));
+      formData.append("originalPrice", String(originalPrice));
+      formData.append("discountedPrice", String(discountedPrice));
+      formData.append("pickupStart", newPickupStart.trim());
+      formData.append("pickupEnd", newPickupEnd.trim());
+      formData.append("description", newDescription.trim());
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      const res = await createBatchListingAction(formData);
 
       if (!res.success) {
         setListingError(res.error);
@@ -458,10 +492,21 @@ export function ManagerView({
                   return (
                     <article key={listing.id} className="rounded-2xl border border-[#E7EBE4] bg-[#FCFDF9] p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <span className="inline-flex rounded-full bg-[#EEF4EA] px-2.5 py-1 text-[10px] font-bold text-[#5E765D]">{listing.category}</span>
-                          <h3 className="mt-2 text-sm font-extrabold leading-5 text-[#263A2B]">{listing.title}</h3>
-                          <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-[#7B857B]">{listing.description}</p>
+                        <div className="flex items-start gap-3 min-w-0">
+                          {listing.image_url && (
+                            <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-[#E5E9E1] bg-[#F0F3EC]">
+                              <img
+                                src={listing.image_url}
+                                alt={listing.title}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <span className="inline-flex rounded-full bg-[#EEF4EA] px-2.5 py-1 text-[10px] font-bold text-[#5E765D]">{listing.category}</span>
+                            <h3 className="mt-1.5 text-sm font-extrabold leading-5 text-[#263A2B]">{listing.title}</h3>
+                            <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-[#7B857B]">{listing.description}</p>
+                          </div>
                         </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${listing.available_quantity <= 2 ? "bg-[#FFF1DC] text-[#9A6721]" : "bg-[#E9F4E9] text-[#347047]"}`}>
                           {listing.available_quantity === 0 ? "Sold out" : `${listing.available_quantity} left`}
@@ -572,6 +617,87 @@ export function ManagerView({
                     <input id="pickup-end" type="text" required placeholder="9:30 PM" value={newPickupEnd} onChange={(event) => setNewPickupEnd(event.target.value)} className="w-full rounded-xl border border-[#DDE5D9] bg-white px-3.5 py-3 text-sm text-[#263A2B] outline-none focus:border-[#54835B] focus:ring-4 focus:ring-[#54835B]/10" />
                   </div>
                 </div>
+              </div>
+
+              {/* Batch Photo Upload */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#405746]">
+                  Batch photo <span className="font-medium text-[#8A958A]">(optional)</span>
+                </label>
+                {imagePreview ? (
+                  <div className="relative overflow-hidden rounded-2xl border border-[#D5E1D4] bg-[#F4F8F3] p-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm sm:size-20">
+                        <img
+                          src={imagePreview}
+                          alt="Batch preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-extrabold text-[#263A2B]">
+                          {imageFile?.name || "Uploaded photo"}
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-medium text-[#738274]">
+                          {imageFile
+                            ? `${(imageFile.size / 1024).toFixed(0)} KB · Ready to publish`
+                            : "Selected image"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#B34032] hover:underline"
+                        >
+                          <IconX size={12} /> Remove photo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleImageSelect(file);
+                    }}
+                    className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
+                      isDragging
+                        ? "border-[#2D6A40] bg-[#EDF6EE]"
+                        : "border-[#D8E1D5] bg-[#FBFCF9] hover:border-[#ADC7B0] hover:bg-[#F5F9F4]"
+                    }`}
+                  >
+                    <input
+                      id="listing-image"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageSelect(file);
+                      }}
+                      className="absolute inset-0 z-10 cursor-pointer opacity-0"
+                      aria-label="Upload batch photo"
+                    />
+                    <div className="grid size-11 place-items-center rounded-2xl bg-[#EAF3E8] text-[#2D6A40] shadow-sm">
+                      <IconPhoto size={22} />
+                    </div>
+                    <p className="mt-2.5 text-xs font-extrabold text-[#273B2C]">
+                      Click to upload a food photo{" "}
+                      <span className="font-normal text-[#6C7B6E]">or drag & drop</span>
+                    </p>
+                    <p className="mt-1 text-[11px] text-[#869287]">
+                      PNG, JPG, WebP up to 10MB (Category fallback used if empty)
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>

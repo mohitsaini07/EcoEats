@@ -912,7 +912,7 @@ export function ManagerView({
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(listing)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE4D9] bg-white px-3 py-1.5 text-xs font-bold text-[#2A4833] transition hover:bg-[#F2F6F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2D6A40]"
+                            className="inline-flex items-center gap-1.5 rounded-xl cursor-pointer border border-[#DCE4D9] bg-white px-3 py-1.5 text-xs font-bold text-[#2A4833] transition hover:bg-[#F2F6F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2D6A40]"
                             title="Edit batch details & available inventory"
                           >
                             <IconPencil size={13} />
@@ -925,7 +925,7 @@ export function ManagerView({
                               type="button"
                               disabled={togglingListingId === listing.id}
                               onClick={() => handleToggleStatus(listing)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E2E6DE] bg-white px-3 py-1.5 text-xs font-bold text-[#6D776F] transition hover:bg-[#F4F6F2] hover:text-[#233528] disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-xl cursor-pointer border border-[#E2E6DE] bg-white px-3 py-1.5 text-xs font-bold text-[#6D776F] transition hover:bg-[#F4F6F2] hover:text-[#233528] disabled:opacity-50"
                               title="Hide from customer marketplace"
                             >
                               <IconEyeOff size={13} />
@@ -936,7 +936,7 @@ export function ManagerView({
                               type="button"
                               disabled={togglingListingId === listing.id}
                               onClick={() => handleToggleStatus(listing)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#CDE3CF] bg-[#EDF6EE] px-3 py-1.5 text-xs font-bold text-[#27683F] transition hover:bg-[#DFEFDF] disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-xl cursor-pointer border border-[#CDE3CF] bg-[#EDF6EE] px-3 py-1.5 text-xs font-bold text-[#27683F] transition hover:bg-[#DFEFDF] disabled:opacity-50"
                               title="Show in customer marketplace"
                             >
                               <IconEye size={13} />
@@ -948,7 +948,7 @@ export function ManagerView({
                           <button
                             type="button"
                             onClick={() => handleOpenDelete(listing)}
-                            className="inline-flex size-8 items-center justify-center rounded-xl border border-[#F3DCD6] bg-white text-[#B34336] transition hover:bg-[#FDF2F0] hover:text-[#942C20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B34336]"
+                            className="inline-flex size-8 items-center justify-center cursor-pointer rounded-xl border border-[#F3DCD6] bg-white text-[#B34336] transition hover:bg-[#FDF2F0] hover:text-[#942C20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B34336]"
                             title="Delete batch"
                             aria-label={`Delete ${listing.title}`}
                           >

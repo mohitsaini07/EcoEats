@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { sql } from "@/lib/db/client";
 import {
   getCustomerActiveCart,
   addToCustomerCart,
@@ -141,7 +142,7 @@ export async function switchCartRestaurantAction(
  * and marks cart CHECKED_OUT.
  */
 export async function checkoutActiveCartAction(): Promise<
-  CartActionResult<{ orderId: string }>
+  CartActionResult<{ orderId: string; pickupCode?: string }>
 > {
   try {
     const supabase = await createClient();
@@ -160,8 +161,18 @@ export async function checkoutActiveCartAction(): Promise<
       return { success: false, error: rpcError.message || "Checkout failed." };
     }
 
+    const code = `ECO-${String(orderId).replace(/-/g, "").slice(-4).toUpperCase()}`;
+    await sql`
+      UPDATE orders
+      SET status = 'CONFIRMED',
+          pickup_code = ${code},
+          updated_at = NOW()
+      WHERE id = ${orderId}
+    `;
+
     revalidatePath("/marketplace");
-    return { success: true, data: { orderId: String(orderId) } };
+    revalidatePath("/manager");
+    return { success: true, data: { orderId: String(orderId), pickupCode: code } };
   } catch (error) {
     console.error("Checkout action error:", error);
     const message = error instanceof Error ? error.message : "Failed to complete checkout.";

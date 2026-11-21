@@ -7,6 +7,8 @@ import {
   updateFoodListingInDb,
   toggleListingStatusInDb,
   deleteFoodListingInDb,
+  verifyPickupCodeInDb,
+  completeOrderPickupInDb,
   type CreateListingInput,
   type UpdateListingInput,
 } from "@/lib/db/listings";
@@ -252,6 +254,66 @@ export async function deleteBatchListingAction(
     console.error("Error deleting surplus batch:", error);
     const message =
       error instanceof Error ? error.message : "Failed to delete batch.";
+    return { success: false, error: message };
+  }
+}
+
+export async function verifyPickupCodeAction(
+  pickupCode: string
+): Promise<
+  ActionResult<{ orderId: string; customerName: string; pickupCode: string }>
+> {
+  try {
+    const user = await requireRole("RESTAURANT_MANAGER", "ADMIN");
+    const code = pickupCode.trim().toUpperCase();
+    if (!code) {
+      return { success: false, error: "Please enter a valid pickup code." };
+    }
+
+    const res = await verifyPickupCodeInDb(code, user.id, user.role === "ADMIN");
+    if (!res.success) {
+      return { success: false, error: res.error };
+    }
+
+    revalidatePath("/manager");
+    revalidatePath("/marketplace");
+    return { success: true, data: res.data };
+  } catch (error) {
+    console.error("Error verifying pickup code:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to verify pickup code.";
+    return { success: false, error: message };
+  }
+}
+
+export async function completeOrderPickupAction(
+  orderId: string
+): Promise<ActionResult<{ orderId: string }>> {
+  try {
+    const user = await requireRole("RESTAURANT_MANAGER", "ADMIN");
+    if (!orderId) {
+      return { success: false, error: "Order ID is required." };
+    }
+
+    const res = await completeOrderPickupInDb(
+      orderId,
+      user.id,
+      user.role === "ADMIN"
+    );
+    if (!res.success) {
+      return {
+        success: false,
+        error: res.error || "Cannot complete this pickup.",
+      };
+    }
+
+    revalidatePath("/manager");
+    revalidatePath("/marketplace");
+    return { success: true, data: { orderId } };
+  } catch (error) {
+    console.error("Error completing pickup:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to complete pickup.";
     return { success: false, error: message };
   }
 }

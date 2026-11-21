@@ -183,8 +183,22 @@ export async function getManagerDashboardData(managerId: string) {
     `;
 
     if (!restaurant) {
+      // Check if user has an approved restaurant application
+      const [app] = await sql`
+        SELECT restaurant_name, restaurant_address
+        FROM restaurant_applications
+        WHERE user_id = ${managerId}
+          AND status = 'APPROVED'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+
       const [user] = await sql`SELECT name, email FROM users WHERE id = ${managerId}`;
-      const restName = user?.name ? `${user.name}'s Kitchen` : "The Artisan Kitchen";
+      const restName =
+        app?.restaurant_name ||
+        (user?.name ? `${user.name}'s Kitchen` : "The Artisan Kitchen");
+      const restAddress =
+        app?.restaurant_address || "Bengaluru, Karnataka";
 
       const [created] = await sql`
         INSERT INTO restaurants (
@@ -197,7 +211,7 @@ export async function getManagerDashboardData(managerId: string) {
           ${managerId},
           ${restName},
           'Fresh surplus partner kitchen',
-          'Indiranagar, Bengaluru',
+          ${restAddress},
           'ACTIVE'
         )
         RETURNING id, name, address, description, status
@@ -232,7 +246,7 @@ export async function getManagerDashboardData(managerId: string) {
 
     const listings = listingRows.map(mapRowToListing);
 
-    // 3. Fetch real orders for this restaurant if any exist
+    // 3. Fetch real orders for this restaurant
     const orderRows = await sql`
       SELECT 
         o.id AS order_id,
@@ -241,7 +255,28 @@ export async function getManagerDashboardData(managerId: string) {
         o.total_amount,
         o.status AS order_status,
         o.picked_up_at,
-        o.created_at
+        o.created_at,
+        COALESCE(
+          (
+            SELECT string_agg(fl.name || ' × ' || oi.quantity, ', ')
+            FROM order_items oi
+            JOIN food_listings fl ON oi.food_listing_id = fl.id
+            WHERE oi.order_id = o.id
+          ),
+          'Surplus order'
+        ) AS items_summary,
+        (
+          SELECT MIN(fl.pickup_start)
+          FROM order_items oi
+          JOIN food_listings fl ON oi.food_listing_id = fl.id
+          WHERE oi.order_id = o.id
+        ) AS earliest_pickup,
+        (
+          SELECT MAX(fl.pickup_end)
+          FROM order_items oi
+          JOIN food_listings fl ON oi.food_listing_id = fl.id
+          WHERE oi.order_id = o.id
+        ) AS latest_pickup
       FROM orders o
       JOIN users u ON o.user_id = u.id
       WHERE o.restaurant_id = ${restaurant.id}
@@ -249,15 +284,40 @@ export async function getManagerDashboardData(managerId: string) {
       ORDER BY o.created_at DESC
     `;
 
-    const queue: PickupQueueItem[] = orderRows.map((o) => ({
-      order_id: String(o.order_id),
-      customer_name: o.customer_name || "Customer",
-      pickup_code: o.pickup_code || "ECO-0000",
-      items_summary: `Order #${String(o.order_id).slice(-6)}`,
-      total_amount: Number(o.total_amount),
-      pickup_window: "Today, 8:00 PM – 9:30 PM",
-      status: o.picked_up_at ? "COMPLETED" : "READY_FOR_PICKUP",
-    }));
+    const queue: PickupQueueItem[] = orderRows.map((o) => {
+      let windowText = "8:00 PM – 9:30 PM";
+      if (o.earliest_pickup && o.latest_pickup) {
+        windowText = `${formatPickupTime(o.earliest_pickup)} – ${formatPickupTime(o.latest_pickup)}`;
+      }
+      return {
+        order_id: String(o.order_id),
+        customer_name: o.customer_name || "Customer",
+        pickup_code: o.pickup_code || "ECO-0000",
+        items_summary: o.items_summary,
+        total_amount: Number(o.total_amount),
+        pickup_window: windowText,
+        status: o.order_status === "COMPLETED" || o.picked_up_at ? "COMPLETED" : "READY_FOR_PICKUP",
+      };
+    });
+
+    // 4. Calculate real statistics from database
+    const [revenueRow] = await sql`
+      SELECT COALESCE(SUM(total_amount), 0) AS total_revenue
+      FROM orders
+      WHERE restaurant_id = ${restaurant.id}
+        AND status IN ('CONFIRMED', 'COMPLETED')
+    `;
+
+    const [rescuedRow] = await sql`
+      SELECT COALESCE(SUM(oi.quantity), 0) AS units_rescued
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.restaurant_id = ${restaurant.id}
+        AND o.status IN ('CONFIRMED', 'COMPLETED')
+    `;
+
+    const totalRevenue = Number(revenueRow?.total_revenue ?? 0);
+    const totalRescued = Number(rescuedRow?.units_rescued ?? 0);
 
     return {
       restaurant: {
@@ -267,19 +327,148 @@ export async function getManagerDashboardData(managerId: string) {
       },
       listings,
       queue,
+      stats: {
+        totalRescuedToday: totalRescued,
+        todayRevenue: totalRevenue,
+      },
     };
   } catch (error) {
     console.error("Failed to fetch manager dashboard data:", error);
     return {
-      restaurant: {
-        id: "rest-001",
-        name: "Test Cafe & Artisan Bakery",
-        address: "124 100ft Road, Indiranagar, Bengaluru",
-      },
+      restaurant: null,
       listings: [],
       queue: [],
+      stats: {
+        totalRescuedToday: 0,
+        todayRevenue: 0,
+      },
     };
   }
+}
+
+/**
+ * Verify a customer pickup code for the manager's restaurant.
+ */
+export async function verifyPickupCodeInDb(
+  code: string,
+  managerId: string,
+  isAdmin: boolean = false
+): Promise<
+  | { success: true; data: { orderId: string; customerName: string; pickupCode: string } }
+  | { success: false; error: string }
+> {
+  const [restaurant] = isAdmin
+    ? await sql`SELECT id FROM restaurants LIMIT 1`
+    : await sql`SELECT id FROM restaurants WHERE manager_id = ${managerId} LIMIT 1`;
+
+  if (!restaurant) {
+    return { success: false, error: "No managed restaurant found for your account." };
+  }
+
+  const [order] = await sql`
+    SELECT o.id, o.pickup_code, o.status, u.name AS customer_name
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.restaurant_id = ${restaurant.id}
+      AND UPPER(o.pickup_code) = ${code}
+    LIMIT 1
+  `;
+
+  if (!order) {
+    return {
+      success: false,
+      error: `No pickup was found for “${code}”. Check the code and try again.`,
+    };
+  }
+
+  if (order.status === "COMPLETED") {
+    return {
+      success: false,
+      error: `Order with code “${code}” has already been marked as handed over.`,
+    };
+  }
+
+  if (order.status !== "CONFIRMED") {
+    return {
+      success: false,
+      error: `Order is not confirmed yet (current status: ${order.status}).`,
+    };
+  }
+
+  await sql.begin(async (tx) => {
+    await tx`
+      UPDATE orders
+      SET status = 'COMPLETED',
+          picked_up_at = NOW(),
+          updated_at = NOW()
+      WHERE id = ${order.id}
+    `;
+
+    await tx`
+      UPDATE inventory_reservations
+      SET status = 'CONVERTED',
+          converted_at = NOW()
+      WHERE order_id = ${order.id}
+        AND status = 'ACTIVE'
+    `;
+  });
+
+  return {
+    success: true,
+    data: {
+      orderId: String(order.id),
+      customerName: order.customer_name || "Customer",
+      pickupCode: order.pickup_code,
+    },
+  };
+}
+
+/**
+ * Mark an order as handed over for the manager's restaurant.
+ */
+export async function completeOrderPickupInDb(
+  orderId: string,
+  managerId: string,
+  isAdmin: boolean = false
+): Promise<{ success: boolean; error?: string }> {
+  const [restaurant] = isAdmin
+    ? await sql`SELECT id FROM restaurants LIMIT 1`
+    : await sql`SELECT id FROM restaurants WHERE manager_id = ${managerId} LIMIT 1`;
+
+  if (!restaurant) {
+    return { success: false, error: "No managed restaurant found." };
+  }
+
+  const [order] = await sql`
+    SELECT id, status FROM orders
+    WHERE id = ${orderId}
+      AND restaurant_id = ${restaurant.id}
+    LIMIT 1
+  `;
+
+  if (!order) {
+    return { success: false, error: "Order not found for your kitchen." };
+  }
+
+  await sql.begin(async (tx) => {
+    await tx`
+      UPDATE orders
+      SET status = 'COMPLETED',
+          picked_up_at = NOW(),
+          updated_at = NOW()
+      WHERE id = ${order.id}
+    `;
+
+    await tx`
+      UPDATE inventory_reservations
+      SET status = 'CONVERTED',
+          converted_at = NOW()
+      WHERE order_id = ${order.id}
+        AND status = 'ACTIVE'
+    `;
+  });
+
+  return { success: true };
 }
 
 /**

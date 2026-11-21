@@ -18,6 +18,7 @@ export default async function ManagerPage() {
       initialRestaurant={dashboardData.restaurant}
       initialListings={dashboardData.listings}
       initialQueue={dashboardData.queue}
+      initialStats={dashboardData.stats}
     />
   );
 }

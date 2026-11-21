@@ -19,72 +19,10 @@ import {
   updateBatchListingAction,
   toggleBatchStatusAction,
   deleteBatchListingAction,
+  verifyPickupCodeAction,
+  completeOrderPickupAction,
 } from "@/app/manager/actions";
 import type { PickupQueueItem } from "@/lib/db/listings";
-
-const INITIAL_QUEUE: PickupQueueItem[] = [
-  {
-    order_id: "ord-882194",
-    customer_name: "Aarav Sharma",
-    pickup_code: "ECO-4829",
-    items_summary: "Artisan Chocolate Croissant Box (Set of 3) × 2",
-    total_amount: 298,
-    pickup_window: "8:00 PM – 9:30 PM",
-    status: "READY_FOR_PICKUP",
-  },
-  {
-    order_id: "ord-882201",
-    customer_name: "Priya Nair",
-    pickup_code: "ECO-9124",
-    items_summary: "Country Sourdough Loaf + Brioche Roll × 1",
-    total_amount: 160,
-    pickup_window: "8:00 PM – 9:30 PM",
-    status: "READY_FOR_PICKUP",
-  },
-];
-
-const INITIAL_MANAGER_LISTINGS: FoodListing[] = [
-  {
-    id: "fl-001",
-    restaurant_id: "rest-001",
-    restaurant_name: "Test Cafe & Artisan Bakery",
-    restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
-    distance_km: 0.4,
-    title: "Artisan Chocolate Croissant Box (Set of 3)",
-    description:
-      "Flaky all-butter French croissants baked this morning, filled with Belgian dark chocolate ganache.",
-    category: "Bakery",
-    quantity: 10,
-    available_quantity: 7,
-    original_price: 380,
-    discounted_price: 149,
-    pickup_start: "8:00 PM",
-    pickup_end: "9:30 PM",
-    status: "ACTIVE",
-    image_url: "./images/skyler-ewing.jpg",
-    dietary_tags: ["Vegetarian", "Baked Today"],
-  },
-  {
-    id: "fl-003",
-    restaurant_id: "rest-001",
-    restaurant_name: "Test Cafe & Artisan Bakery",
-    restaurant_address: "124 100ft Road, Indiranagar, Bengaluru",
-    distance_km: 0.4,
-    title: "Cinnamon Brioche Spirals (Set of 2)",
-    description:
-      "Spiced cinnamon rolls with cream cheese icing drizzle, packaged fresh for evening pickup.",
-    category: "Bakery",
-    quantity: 8,
-    available_quantity: 2,
-    original_price: 260,
-    discounted_price: 110,
-    pickup_start: "8:00 PM",
-    pickup_end: "9:30 PM",
-    status: "ACTIVE",
-    image_url: "./images/cinnamon-rolls.jpg",
-    dietary_tags: ["Vegetarian"],
-  },
-];
 
 const categories = ["Bakery", "Meals", "Cafe", "Dessert", "Vegan"] as const;
 
@@ -95,28 +33,35 @@ interface ManagerViewProps {
     id: string;
     name: string;
     address: string;
-  };
+  } | null;
   initialListings?: FoodListing[];
   initialQueue?: PickupQueueItem[];
+  initialStats?: {
+    totalRescuedToday: number;
+    todayRevenue: number;
+  };
 }
 
 export function ManagerView({
   initialRestaurant,
-  initialListings,
-  initialQueue,
+  initialListings = [],
+  initialQueue = [],
+  initialStats,
 }: ManagerViewProps = {}) {
   const [restaurant] = useState(
     initialRestaurant || {
-      id: "rest-001",
-      name: "The Artisan Oven & Cafe",
-      address: "Indiranagar Branch",
+      id: "",
+      name: "Your Kitchen",
+      address: "Bengaluru, Karnataka",
     }
   );
-  const [listings, setListings] = useState<FoodListing[]>(
-    initialListings && initialListings.length > 0 ? initialListings : INITIAL_MANAGER_LISTINGS
-  );
-  const [queue, setQueue] = useState<PickupQueueItem[]>(
-    initialQueue && initialQueue.length > 0 ? initialQueue : INITIAL_QUEUE
+  const [listings, setListings] = useState<FoodListing[]>(initialListings);
+  const [queue, setQueue] = useState<PickupQueueItem[]>(initialQueue);
+  const [stats] = useState(
+    initialStats || {
+      totalRescuedToday: 0,
+      todayRevenue: 0,
+    }
   );
 
   const [codeInput, setCodeInput] = useState("");
@@ -175,6 +120,10 @@ export function ManagerView({
   // Deactivate/Activate Status Toggling State
   const [togglingListingId, setTogglingListingId] = useState<string | null>(null);
 
+  // Verification & Completion Loading States
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
+
   // Filters
   const [queueFilter, setQueueFilter] = useState<"ALL" | "READY_FOR_PICKUP" | "COMPLETED">("ALL");
   const [batchFilter, setBatchFilter] = useState<"ALL" | "ACTIVE" | "CANCELLED" | "SOLD_OUT">("ALL");
@@ -182,8 +131,8 @@ export function ManagerView({
   const pendingPickupsCount = queue.filter((item) => item.status === "READY_FOR_PICKUP").length;
   const completedPickupsCount = queue.filter((item) => item.status === "COMPLETED").length;
   const activeListingsCount = listings.filter((item) => item.status === "ACTIVE" && item.available_quantity > 0).length;
-  const totalRescuedToday = 14;
-  const todayRevenue = 2180;
+  const totalRescuedToday = stats.totalRescuedToday;
+  const todayRevenue = stats.todayRevenue;
 
   const visibleQueue = useMemo(
     () => queue.filter((item) => queueFilter === "ALL" || item.status === queueFilter),
@@ -210,44 +159,76 @@ export function ManagerView({
     window.setTimeout(() => setVerifyMessage(null), 5000);
   }
 
-  function handleVerifyCode(event: FormEvent<HTMLFormElement>) {
+  async function handleVerifyCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = codeInput.trim().toUpperCase();
     if (!trimmed) return;
 
-    const foundItem = queue.find(
-      (item) => item.pickup_code.toUpperCase() === trimmed && item.status === "READY_FOR_PICKUP",
-    );
+    setIsVerifying(true);
+    try {
+      const res = await verifyPickupCodeAction(trimmed);
+      if (!res.success) {
+        showVerificationMessage({
+          text: res.error,
+          success: false,
+        });
+        return;
+      }
 
-    if (!foundItem) {
+      setQueue((previous) =>
+        previous.map((item) =>
+          item.pickup_code.toUpperCase() === trimmed
+            ? { ...item, status: "COMPLETED" }
+            : item
+        )
+      );
+      setCodeInput("");
       showVerificationMessage({
-        text: `No pending pickup was found for “${trimmed}”. Check the code and try again.`,
+        text: `Pickup verified for ${res.data.customerName} (${res.data.pickupCode}). The order is marked as handed over!`,
+        success: true,
+      });
+    } catch {
+      showVerificationMessage({
+        text: "An unexpected error occurred while verifying the pickup code.",
         success: false,
       });
-      return;
+    } finally {
+      setIsVerifying(false);
     }
-
-    setQueue((previous) =>
-      previous.map((item) =>
-        item.order_id === foundItem.order_id ? { ...item, status: "COMPLETED" } : item,
-      ),
-    );
-    setCodeInput("");
-    showVerificationMessage({
-      text: `Pickup verified for ${foundItem.customer_name}. The order is marked as handed over.`,
-      success: true,
-    });
   }
 
-  function handleCompletePickup(orderId: string) {
+  async function handleCompletePickup(orderId: string) {
     const selected = queue.find((item) => item.order_id === orderId);
     if (!selected || selected.status !== "READY_FOR_PICKUP") return;
 
-    setQueue((previous) =>
-      previous.map((item) =>
-        item.order_id === orderId ? { ...item, status: "COMPLETED" } : item,
-      ),
-    );
+    setCompletingOrderId(orderId);
+    try {
+      const res = await completeOrderPickupAction(orderId);
+      if (!res.success) {
+        showActionMessage({
+          text: res.error,
+          success: false,
+        });
+        return;
+      }
+
+      setQueue((previous) =>
+        previous.map((item) =>
+          item.order_id === orderId ? { ...item, status: "COMPLETED" } : item
+        )
+      );
+      showActionMessage({
+        text: `Order for ${selected.customer_name} marked as handed over.`,
+        success: true,
+      });
+    } catch {
+      showActionMessage({
+        text: "Failed to mark order as handed over.",
+        success: false,
+      });
+    } finally {
+      setCompletingOrderId(null);
+    }
   }
 
   // --- Image Handlers ---
@@ -643,10 +624,10 @@ export function ManagerView({
               />
               <button
                 type="submit"
-                disabled={!codeInput.trim()}
+                disabled={!codeInput.trim() || isVerifying}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#1D4A30] px-5 text-sm font-bold text-white transition hover:bg-[#173C27] disabled:cursor-not-allowed disabled:opacity-45"
               >
-                <IconCheckCircle size={16} /> Verify code
+                <IconCheckCircle size={16} /> {isVerifying ? "Verifying..." : "Verify code"}
               </button>
             </form>
           </div>
@@ -737,10 +718,11 @@ export function ManagerView({
                       {item.status === "READY_FOR_PICKUP" ? (
                         <button
                           type="button"
+                          disabled={completingOrderId === item.order_id}
                           onClick={() => handleCompletePickup(item.order_id)}
-                          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[#C9DCCB] bg-[#F0F6EF] px-4 text-xs font-extrabold text-[#2C6840] transition hover:bg-[#E5F0E4]"
+                          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[#C9DCCB] bg-[#F0F6EF] px-4 text-xs font-extrabold text-[#2C6840] transition hover:bg-[#E5F0E4] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Mark handed over
+                          {completingOrderId === item.order_id ? "Marking..." : "Mark handed over"}
                         </button>
                       ) : (
                         <span className="inline-flex min-h-9 shrink-0 items-center gap-1.5 text-xs font-bold text-[#6E846F]">
